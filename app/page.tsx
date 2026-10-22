@@ -23,7 +23,9 @@ export default function Desk() {
   const [now, setNow] = useState(() => Date.now())
   const [forceReplay, setForceReplay] = useState(false)
 
-  useEffect(() => setForceReplay(new URLSearchParams(window.location.search).has('replay')), [])
+  useEffect(() => {
+    setForceReplay(new URLSearchParams(window.location.search).has('replay'))
+  }, [])
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)

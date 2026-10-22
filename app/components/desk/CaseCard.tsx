@@ -27,7 +27,10 @@ function vehicleLabel(o?: Observation) {
 export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, act }: Props) {
   const ref = useRef<HTMLElement>(null)
   // A new alert scrolls into view if staff had scrolled away; 'nearest' leaves the page alone when it's already visible.
-  useEffect(() => ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), [c.id])
+  // Braces matter: newer Chrome returns a Promise from scrollIntoView, and React would call it as a cleanup.
+  useEffect(() => {
+    ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [c.id])
   const obs = observations.find((o) => o.id === c.observationIds[0])
   const waiting = (now - new Date(c.firstSeenAt ?? c.openedAt).getTime()) / 1000
   const alerted = (now - new Date(c.openedAt).getTime()) / 1000
