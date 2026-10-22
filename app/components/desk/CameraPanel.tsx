@@ -133,19 +133,6 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
                 {replay.note}
               </span>
             )}
-            <button
-              onClick={replay.running ? stopReplay : startReplay}
-              className={`absolute right-3 top-3 min-h-11 rounded-lg bg-white px-4 text-sm font-semibold text-slate-900 hover:bg-slate-100 ${
-                replay.played ? '' : 'ring-4 ring-amber-400/70 motion-safe:animate-pulse'
-              }`}
-            >
-              {replay.running ? 'Stop' : replay.played ? 'Play again' : 'Play recorded arrival'}
-            </button>
-            {!replay.played && !latest && (
-              <p className="absolute right-3 top-16 hidden rounded-lg bg-amber-400 sm:block px-3 py-1.5 text-xs font-semibold text-amber-950">
-                Start here: a car arrives and waits without checking in
-              </p>
-            )}
           </>
         )}
         <ZoneLayer
@@ -161,11 +148,13 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
       {live
         ? streamActive && <VisionChip v={last?.vision} checking={checking} source="Ring live" />
         : latest?.source === 'replay' && <VisionChip v={latest.vision} source="Replay" />}
-      <div className="flex items-center justify-between gap-3 bg-white px-4 py-2 text-sm text-slate-600">
-        <span>
-          {settings.zone
-            ? 'Only the marked pickup bay is checked. Cars parked elsewhere are ignored.'
-            : 'The whole picture is checked. Mark the pickup bay so parked cars are ignored.'}
+      <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 bg-white px-4 py-2 text-sm text-slate-600">
+        <span className="min-w-[14rem] flex-1">
+          {!live && !replay.played && !latest
+            ? 'Start here: a car pulls into the bay and waits without checking in.'
+            : settings.zone
+              ? 'Only the marked pickup bay is checked. Cars parked elsewhere are ignored.'
+              : 'The whole picture is checked. Mark the pickup bay so parked cars are ignored.'}
         </span>
         <button
           disabled={busy || editingZone}
@@ -174,6 +163,18 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
         >
           {settings.zone ? 'Move bay' : 'Mark pickup bay'}
         </button>
+        {!live && (
+          <button
+            onClick={replay.running ? stopReplay : startReplay}
+            className={`min-h-11 flex-none rounded-lg px-4 font-semibold ${
+              replay.running
+                ? 'bg-white text-slate-900 ring-1 ring-stone-300 hover:bg-stone-50'
+                : 'bg-slate-900 text-white hover:bg-slate-700'
+            } ${replay.played ? '' : 'ring-4 ring-amber-400/70 motion-safe:animate-pulse'}`}
+          >
+            {replay.running ? 'Stop replay' : replay.played ? 'Play again' : 'Play recorded arrival'}
+          </button>
+        )}
       </div>
     </section>
   )

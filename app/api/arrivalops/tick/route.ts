@@ -4,9 +4,10 @@ import { ctxNow, takeAnnouncements } from '@/lib/arrivalops/store'
 
 export const dynamic = 'force-dynamic'
 
-// Polled by the staff screen. Returns cases nobody has acted on for 45 s, once each, so the counter
-// device can announce them out loud.
+// Polled by the staff screen. With call-outs on (?speak=1) it returns cases nobody has acted on within the
+// call-out delay, once each, so the counter tablet can say them out loud. Without, nothing is marked announced.
 export function POST(request: NextRequest) {
   const { boardId } = boardFor(request)
-  return NextResponse.json({ announce: takeAnnouncements(ctxNow(), boardId).map((c) => ({ caseId: c.id })) })
+  const speaking = request.nextUrl.searchParams.get('speak') === '1'
+  return NextResponse.json({ announce: takeAnnouncements(ctxNow(), boardId, speaking).map((c) => ({ caseId: c.id })) })
 }

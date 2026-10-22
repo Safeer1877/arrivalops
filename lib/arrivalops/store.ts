@@ -8,6 +8,7 @@ import { join } from 'path'
 import { z } from 'zod'
 import { computeMetrics } from './metrics'
 import {
+  closeOpenSightings,
   ActionError,
   casesToAnnounce,
   confirmMatch,
@@ -135,6 +136,12 @@ export function dispatch(input: unknown, ctx = ctxNow(), boardId = SHOP_BOARD) {
   return view(state, ctx.now)
 }
 
+/** A replay started again before the last one finished: its car shouldn't linger or count as missed. */
+export function restartReplay(ctx = ctxNow(), boardId = SHOP_BOARD) {
+  const state = getState(boardId)
+  if (closeOpenSightings(state, ctx, 'Replay restarted; the earlier car was cleared')) save(state, boardId)
+}
+
 export function recordObservation(
   input: { deviceId: string; deviceName?: string; source: Observation['source']; frame?: string },
   vision: VisionResult,
@@ -148,12 +155,15 @@ export function recordObservation(
   return { caseId: c?.id ?? null, view: view(state, ctx.now) }
 }
 
-/** Mark overdue cases as announced and return them; the caller plays them on the chime. */
-export function takeAnnouncements(ctx = ctxNow(), boardId = SHOP_BOARD) {
+/**
+ * Called on every poll. Moves cars past the dwell time to staff, and, when the counter tablet has call-outs on,
+ * marks alerts nobody answered as announced and returns them for the tablet to say out loud.
+ */
+export function takeAnnouncements(ctx = ctxNow(), boardId = SHOP_BOARD, speaking = true) {
   const state = getState(boardId)
-  promote(state, ctx) // a car can pass the dwell time between sightings
-  const due = casesToAnnounce(state, ctx.now)
+  const promoted = promote(state, ctx) // a car can pass the dwell time between sightings
+  const due = speaking ? casesToAnnounce(state, ctx.now) : []
   for (const c of due) c.chimeAnnouncedAt = ctx.now.toISOString()
-  if (due.length) save(state, boardId)
+  if (due.length || promoted.length) save(state, boardId)
   return due
 }

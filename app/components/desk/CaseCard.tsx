@@ -77,7 +77,7 @@ export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, a
           <h3 className="mt-1 text-2xl font-bold text-slate-900">{vehicleLabel(obs)} in the pickup bay</h3>
           <p className="mt-1 text-slate-600">
             Waiting <span className={`font-semibold tabular-nums ${urgent ? 'text-amber-700' : 'text-slate-900'}`}>{clock(waiting)}</span>
-            {c.chimeAnnouncedAt && ' · announced in store'}
+            {c.chimeAnnouncedAt && ' · called out on the counter tablet'}
             {obs && <span className="text-slate-400"> · {Math.round(obs.vision.confidence * 100)}% sure</span>}
           </p>
         </div>

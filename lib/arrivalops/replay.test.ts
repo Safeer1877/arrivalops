@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_STEPS, REPLAY_DEVICE } from './replay'
-import { dispatch, recordObservation } from './store'
+import { dispatch, getState, recordObservation, restartReplay, view } from './store'
 
 describe('replay recording', () => {
   it('ships every frame it refers to', () => {
@@ -37,5 +37,13 @@ describe('replay recording', () => {
     const view = play(DEFAULT_STEPS.length)
     expect(view.cases[0].status).toBe('left')
     expect(view.metrics.missedToday).toBe(1)
+  })
+
+  it('clears a half-played run when the replay starts again, without counting a missed pickup', () => {
+    play(3)
+    restartReplay({ now: new Date(Date.now() + 60_000), id: (p) => `${p}_restart` }, 'replay-test')
+    const v = view(getState('replay-test'))
+    expect(v.cases.filter((c) => c.status === 'needs_review' || c.status === 'watching')).toHaveLength(0)
+    expect(v.metrics.missedToday).toBe(0)
   })
 })

@@ -63,9 +63,9 @@ export function useArrivalOps({ soundOn }: { soundOn: boolean }) {
     refresh()
     const t = setInterval(async () => {
       await refresh()
-      const res = await fetch('/api/arrivalops/tick', { method: 'POST' }).catch(() => null)
+      const res = await fetch(`/api/arrivalops/tick${soundRef.current ? '?speak=1' : ''}`, { method: 'POST' }).catch(() => null)
       const data = res?.ok ? await res.json() : null
-      if (data?.announce?.length && soundRef.current) announce()
+      if (data?.announce?.length) announce()
     }, POLL_MS)
     return () => clearInterval(t)
   }, [refresh])

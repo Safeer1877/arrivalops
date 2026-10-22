@@ -129,6 +129,17 @@ export function promote(state: State, ctx: Ctx): ReviewCase[] {
   return promoted
 }
 
+/** Closes open sightings without counting a lost customer, e.g. when a demo replay is restarted part way. */
+export function closeOpenSightings(state: State, ctx: Ctx, reason: string): number {
+  const open = state.cases.filter((c) => OPEN.includes(c.status))
+  for (const c of open) {
+    c.status = 'passed'
+    c.resolvedAt = iso(ctx.now)
+  }
+  if (open.length) log(state, ctx, { kind: 'observation', text: reason })
+  return open.length
+}
+
 /**
  * A new camera sighting of the pickup bay. A car that stops starts a quiet "watching" case; it reaches staff
  * only after the dwell time, and only while some due order has no check-in. A clear bay ends the visit,
