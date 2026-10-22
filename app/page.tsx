@@ -143,7 +143,7 @@ export default function Desk() {
               setSoundOn(next)
               if (next) {
                 unlockAudio()
-                announce('Call-outs on. I’ll say when a car is waiting with no check-in.')
+                announce('Call-outs on.')
               }
             }}
             aria-pressed={soundOn}

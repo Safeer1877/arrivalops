@@ -337,4 +337,7 @@ export function updateSettings(state: State, patch: Partial<DeskSettings>, ctx: 
   snapshot(state, patch.zone !== undefined ? 'Pickup bay change' : 'Settings change')
   state.settings = { ...settingsOf(state), ...patch }
   log(state, ctx, { kind: 'settings', text: patch.zone !== undefined ? 'Pickup bay marked on the camera view' : 'Desk settings changed' })
+  // A new bay changes what counts as "in the bay". Clear current sightings without calling them missed; the
+  // camera re-checks the new bay on its next frame and a car still inside it is picked up again.
+  if (patch.zone !== undefined) closeOpenSightings(state, ctx, 'Open sightings cleared for the new bay')
 }

@@ -10,6 +10,7 @@ import {
   observe,
   posCheckIn,
   promote,
+  updateSettings,
   undo,
   type Ctx,
 } from './reconcile'
@@ -148,6 +149,14 @@ describe('dwell and departures', () => {
     expect(observe(state, seen(70), sec(70))).toBeNull()
     observe(state, seen(80, { vehiclePresent: false }), sec(80))
     expect(observe(state, seen(200), sec(200))?.id).not.toBe(c.id)
+  })
+
+  it('clears an open alert when the bay is moved, without counting it as missed', () => {
+    const c = observe(state, seen(0), sec(0))!
+    promote(state, sec(61))
+    updateSettings(state, { zone: { x: 0.1, y: 0.1, w: 0.2, h: 0.2 } }, sec(70))
+    expect(c.status).toBe('passed')
+    expect(computeMetrics(state, sec(70).now).missedToday).toBe(0)
   })
 
   it('treats a car that leaves before the alert as ordinary traffic', () => {
