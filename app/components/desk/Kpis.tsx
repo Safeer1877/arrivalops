@@ -15,10 +15,10 @@ export function Kpis({ m }: { m: Metrics }) {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Tile
-        label="Cars waiting unnoticed"
+        label="Cars waiting, no check-in"
         value={String(m.openCases)}
         tone={m.openCases ? 'text-amber-600' : 'text-slate-900'}
-        sub={m.openCases ? 'Needs someone outside' : 'All clear'}
+        sub={m.openCases ? 'Someone needs to go outside' : 'All clear'}
       />
       <Tile
         label="Food going cold"

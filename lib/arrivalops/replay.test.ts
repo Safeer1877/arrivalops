@@ -43,6 +43,7 @@ describe('replay recording', () => {
     play(3)
     restartReplay({ now: new Date(Date.now() + 60_000), id: (p) => `${p}_restart` }, 'replay-test')
     const v = view(getState('replay-test'))
+    expect(v.orders.find((o) => o.vehicleHint === 'grey hatchback')?.checkIn).toBeUndefined()
     expect(v.cases.filter((c) => c.status === 'needs_review' || c.status === 'watching')).toHaveLength(0)
     expect(v.metrics.missedToday).toBe(0)
   })

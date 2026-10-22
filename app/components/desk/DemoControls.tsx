@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import type { ActionInput } from '@/lib/arrivalops/store'
 import type { DeskSettings, Order } from '@/lib/arrivalops/types'
-import { clock } from './format'
+import { SHOP_SETTINGS } from '@/lib/arrivalops/reconcile'
 
 interface Props {
   orders: Order[]
@@ -20,7 +20,8 @@ interface Props {
 export function DemoControls({ orders, settings, busy, act, onReset }: Props) {
   const waiting = orders.filter((o) => !o.checkIn && !o.handedOverAt)
   const [orderId, setOrderId] = useState('')
-  const selected = waiting.find((o) => o.id === orderId) ?? waiting[0]
+  // Default to a customer who didn't describe their car, so one tap doesn't spoil the replay's match.
+  const selected = waiting.find((o) => o.id === orderId) ?? waiting.find((o) => !o.vehicleHint) ?? waiting[0]
 
   return (
     <section aria-labelledby="demo-h" className="rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-sm">
@@ -58,8 +59,8 @@ export function DemoControls({ orders, settings, busy, act, onReset }: Props) {
 
       {settings.demoTiming && (
         <p className="mt-3 text-slate-500">
-          Demo timing: staff are alerted after {clock(settings.dwellSeconds)} and the tablet speaks after {clock(settings.calloutSeconds)}.
-          A shop would use about 1 minute and 45 seconds.
+          Demo timing: alert after {settings.dwellSeconds} s, call-out after {settings.calloutSeconds} s. In a real shop:{' '}
+          {SHOP_SETTINGS.dwellSeconds} s and {SHOP_SETTINGS.calloutSeconds} s.
         </p>
       )}
       <button disabled={busy} onClick={onReset} className="mt-2 min-h-11 rounded-lg px-3 text-slate-500 hover:bg-stone-200">

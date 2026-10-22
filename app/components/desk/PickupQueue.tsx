@@ -59,7 +59,7 @@ export function PickupQueue({ orders, now, busy, act }: Props) {
                 <button
                   disabled={busy}
                   onClick={() => act({ action: 'hand_over', orderId: o.id })}
-                  className="min-h-11 flex-none rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+                  className="min-h-11 flex-none rounded-lg bg-white px-3 text-sm font-semibold text-slate-700 ring-1 ring-stone-300 hover:bg-stone-50 disabled:opacity-50"
                 >
                   Handed over
                 </button>

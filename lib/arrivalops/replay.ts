@@ -31,13 +31,13 @@ const step = (delayMs: number, frame: 'clear' | 'car', note: string): ReplayStep
 // About 80 seconds: the car stops, staff are alerted after the demo dwell time, the tablet calls it out if
 // nobody acts, and if the visitor still does nothing the customer gives up and drives off.
 export const DEFAULT_STEPS: ReplayStep[] = [
-  step(0, 'clear', 'Pickup bays clear'),
-  step(4000, 'car', 'Car stops in the pickup bay'),
-  step(7000, 'car', 'Still there, staff alerted'),
-  step(10_000, 'car', 'Still waiting'),
-  step(10_000, 'car', 'Still waiting'),
-  step(10_000, 'car', 'Still waiting'),
-  step(10_000, 'car', 'Still waiting'),
-  step(10_000, 'car', 'Still waiting'),
-  step(10_000, 'clear', 'Car drove off'),
+  step(0, 'clear', 'Pickup bay empty'),
+  step(4000, 'car', 'A car pulls in. Nobody has checked in'),
+  step(7000, 'car', 'Still there, so staff are alerted'),
+  step(10_000, 'car', 'Driver still waiting for someone to come out'),
+  step(10_000, 'car', 'Driver still waiting for someone to come out'),
+  step(10_000, 'car', 'Driver still waiting for someone to come out'),
+  step(10_000, 'car', 'Driver still waiting for someone to come out'),
+  step(10_000, 'car', 'Driver still waiting for someone to come out'),
+  step(10_000, 'clear', 'Nobody came out, so the driver left'),
 ]

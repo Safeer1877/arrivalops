@@ -61,12 +61,16 @@ export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, a
     <article
       className={`rounded-2xl border-2 bg-white p-5 shadow-sm transition motion-safe:animate-case-in ${urgent ? 'border-amber-500 ring-4 ring-amber-200' : 'border-amber-300'}`}
     >
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         {obs?.frame ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={obs.frame} alt="Camera frame of the pickup bay" className="h-28 w-44 flex-none rounded-lg bg-slate-200 object-cover" />
+          <img
+            src={obs.frame}
+            alt="Camera frame of the pickup bay"
+            className="h-44 w-full flex-none rounded-lg bg-slate-200 object-cover sm:h-24 sm:w-36"
+          />
         ) : (
-          <div className="flex h-28 w-44 flex-none items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">
+          <div className="flex h-24 w-36 flex-none items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">
             No frame
           </div>
         )}
@@ -74,11 +78,14 @@ export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, a
           <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
             {unclear ? 'Camera unsure · please check' : 'Waiting · no check-in'}
           </p>
-          <h3 className="mt-1 text-2xl font-bold text-slate-900">{vehicleLabel(obs)} in the pickup bay</h3>
+          <h3 className="mt-1 text-xl font-bold leading-tight text-slate-900">{vehicleLabel(obs)} in the pickup bay</h3>
           <p className="mt-1 text-slate-600">
             Waiting <span className={`font-semibold tabular-nums ${urgent ? 'text-amber-700' : 'text-slate-900'}`}>{clock(waiting)}</span>
             {c.chimeAnnouncedAt && ' · called out on the counter tablet'}
-            {obs && <span className="text-slate-400"> · {Math.round(obs.vision.confidence * 100)}% sure</span>}
+            {/* A scripted replay answer has no real confidence, so none is shown. */}
+            {obs && obs.vision.model !== 'scripted answer' && (
+              <span className="text-slate-400"> · {Math.round(obs.vision.confidence * 100)}% sure</span>
+            )}
           </p>
         </div>
       </div>

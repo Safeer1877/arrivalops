@@ -9,9 +9,9 @@ const ROWS: Array<[string, string]> = [
   ],
   [
     'Amazon Bedrock (Nova Lite) answering on frames from that video',
-    'Replay mode: real frames from the Playground’s Vehicle stream, played in a staged order (the clip never shows a car pulling in and waiting)',
+    'Replay mode: real frames from the Playground’s Vehicle stream, played in a staged order because the clip never shows a car pulling in and waiting. The stamps on the picture are Ring’s own: when the clip was filmed (2023) and when the Playground streamed it to us (2026). Until recorded Bedrock answers are added, the vehicle answers in replay are scripted.',
   ],
-  ['Reconciliation, metrics, undo and this desk', 'The 45-second call-out plays on this device, not on a Ring Chime'],
+  ['Reconciliation, metrics, undo and this desk', 'The spoken call-out plays on this device, not on a Ring Chime'],
 ]
 
 export function AboutDemo({ open, onClose }: { open: boolean; onClose: () => void }) {

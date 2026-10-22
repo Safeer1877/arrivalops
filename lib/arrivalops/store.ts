@@ -127,17 +127,28 @@ export function dispatch(input: unknown, ctx = ctxNow(), boardId = SHOP_BOARD) {
       updateSettings(state, patch, ctx)
       break
     }
-    case 'reset':
+    case 'reset': {
+      const settings = state.settings // the bay and timings the owner set survive a fresh lunch rush
       state = fresh(boardId, ctx.now)
+      if (settings) state.settings = settings
       g.__arrivalops!.set(boardId, state)
       break
+    }
   }
   save(state, boardId)
   return view(state, ctx.now)
 }
 
-/** A replay started again before the last one finished: its car shouldn't linger or count as missed. */
+/**
+ * Called when a replay starts. A visitor's demo board starts the lunch rush over, so the story always begins
+ * with the customer who described their car still not checked in. On the shop board, only a half-played car
+ * from an earlier run is cleared, without counting it as missed.
+ */
 export function restartReplay(ctx = ctxNow(), boardId = SHOP_BOARD) {
+  if (boardId !== SHOP_BOARD) {
+    dispatch({ action: 'reset' }, ctx, boardId)
+    return
+  }
   const state = getState(boardId)
   if (closeOpenSightings(state, ctx, 'Replay restarted; the earlier car was cleared')) save(state, boardId)
 }
