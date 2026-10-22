@@ -30,7 +30,11 @@ export function Kpis({ m }: { m: Metrics }) {
       <Tile
         label="Time to notice"
         value={clock(m.medianSecondsToAcknowledge)}
-        sub={`Arrival → handover ${clock(m.medianSecondsArrivalToHandover)} (median)`}
+        sub={
+          m.medianSecondsArrivalToHandover === null
+            ? 'Median. No handovers yet today'
+            : `Median. Arrival to handover: ${clock(m.medianSecondsArrivalToHandover)}`
+        }
       />
     </div>
   )

@@ -8,6 +8,13 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
+      keyframes: {
+        'case-in': {
+          from: { opacity: '0', transform: 'translateY(-6px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: { 'case-in': 'case-in 150ms ease-out' },
       colors: {
         'dash-cyan': '#06B6D4',
         'dash-dark': '#0F172A',

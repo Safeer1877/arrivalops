@@ -61,15 +61,12 @@ export async function classifyFrame(jpeg: Uint8Array): Promise<VisionResult> {
         messages: [
           {
             role: 'user',
-            content: [
-              { image: { format: 'jpeg', source: { bytes: jpeg } } },
-              { text: 'Is a vehicle waiting in the pickup bay?' },
-            ],
+            content: [{ image: { format: 'jpeg', source: { bytes: jpeg } } }, { text: 'Is a vehicle waiting in the pickup bay?' }],
           },
         ],
         inferenceConfig: { maxTokens: 120, temperature: 0 },
       }),
-      { abortSignal: abort.signal }
+      { abortSignal: abort.signal },
     )
     const text = res.output?.message?.content?.find((c) => 'text' in c && c.text)?.text ?? ''
     return parseReply(text, MODEL_ID, Date.now() - started)
@@ -83,7 +80,14 @@ export async function classifyFrame(jpeg: Uint8Array): Promise<VisionResult> {
             ? `no access to ${MODEL_ID}; enable it under Bedrock > Model access`
             : err.message
           : 'unknown error'
-    return { vehiclePresent: 'unclear', stopped: 'unclear', confidence: 0, model: MODEL_ID, latencyMs: Date.now() - started, error: message }
+    return {
+      vehiclePresent: 'unclear',
+      stopped: 'unclear',
+      confidence: 0,
+      model: MODEL_ID,
+      latencyMs: Date.now() - started,
+      error: message,
+    }
   } finally {
     clearTimeout(timer)
   }

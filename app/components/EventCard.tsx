@@ -35,6 +35,7 @@ export const EventCard = memo(function EventCard({ event, expanded, onToggle }: 
           <p className="text-xs text-slate-500">{new Date(event.timestamp).toLocaleTimeString()}</p>
         </div>
         {event.thumbnail_url && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={event.thumbnail_url} alt="" className="w-10 h-10 rounded object-cover" />
         )}
       </div>

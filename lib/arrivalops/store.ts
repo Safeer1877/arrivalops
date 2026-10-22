@@ -6,17 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { z } from 'zod'
 import { computeMetrics } from './metrics'
-import {
-  ActionError,
-  casesToAnnounce,
-  confirmMatch,
-  dismiss,
-  handOver,
-  observe,
-  posCheckIn,
-  undo,
-  type Ctx,
-} from './reconcile'
+import { ActionError, casesToAnnounce, confirmMatch, dismiss, handOver, observe, posCheckIn, undo, type Ctx } from './reconcile'
 import { seedState } from './seed'
 import type { Observation, State, VisionResult } from './types'
 
@@ -105,7 +95,7 @@ export function dispatch(input: unknown, ctx = ctxNow()) {
 export function recordObservation(
   input: { deviceId: string; deviceName?: string; source: Observation['source']; frame?: string },
   vision: VisionResult,
-  ctx = ctxNow()
+  ctx = ctxNow(),
 ) {
   const state = getState()
   const obs: Observation = { id: ctx.id('obs'), at: ctx.now.toISOString(), ...input, vision }

@@ -24,6 +24,7 @@ const HEARTBEAT_MS = 20_000 // re-check an unchanged scene this often, so a park
 export function useFrameSampler({ videoRef, enabled, deviceId, deviceName, intervalMs = 3000, onResult }: Options) {
   const [last, setLast] = useState<{ vision: VisionResult; at: number } | null>(null)
   const [stats, setStats] = useState({ sampled: 0, sent: 0 })
+  const [checking, setChecking] = useState(false)
   const prev = useRef<Uint8ClampedArray | null>(null)
   const lastSent = useRef(0)
   const inFlight = useRef(false)
@@ -61,6 +62,7 @@ export function useFrameSampler({ videoRef, enabled, deviceId, deviceName, inter
       big.getContext('2d')!.drawImage(video, 0, 0, big.width, big.height)
       const frame = big.toDataURL('image/jpeg', 0.72)
       inFlight.current = true
+      setChecking(true)
       lastSent.current = now
       try {
         const res = await fetch('/api/arrivalops/observe', {
@@ -76,10 +78,11 @@ export function useFrameSampler({ videoRef, enabled, deviceId, deviceName, inter
         }
       } finally {
         inFlight.current = false
+        setChecking(false)
       }
     }, intervalMs)
     return () => clearInterval(t)
   }, [enabled, deviceId, deviceName, intervalMs, videoRef, onResult])
 
-  return { last, stats }
+  return { last, stats, checking }
 }

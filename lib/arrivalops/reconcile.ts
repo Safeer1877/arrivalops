@@ -1,14 +1,7 @@
 // The heart of ArrivalOps: decide whether a vehicle at the pickup bay is a customer nobody knows about,
 // and walk the case from "needs review" to "handed over". Pure functions over State, so they're easy to test.
 
-import type {
-  ActivityEntry,
-  DismissReason,
-  Observation,
-  Order,
-  ReviewCase,
-  State,
-} from './types'
+import type { ActivityEntry, DismissReason, Observation, Order, ReviewCase, State } from './types'
 
 export const DUE_BEFORE_MIN = 20 // an order is "due" from 20 min before its pickup time...
 export const DUE_AFTER_MIN = 45 // ...until 45 min after it
@@ -86,7 +79,7 @@ export function observe(state: State, obs: Observation, ctx: Ctx): ReviewCase | 
       c.observationIds.some((id) => {
         const o = state.observations.find((x) => x.id === id)
         return o && o.deviceId === obs.deviceId && ctx.now.getTime() - ms(o.at) <= DEDUPE_WINDOW_MS
-      })
+      }),
   )
   const candidates = rankCandidates(state.orders, obs, ctx.now)
 
@@ -137,7 +130,10 @@ function getOrder(state: State, orderId: string): Order {
 }
 
 export class ActionError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message)
   }
 }
@@ -210,7 +206,5 @@ export function undo(state: State, ctx: Ctx): string {
 
 /** Cases nobody has acted on for a while get announced once on the in-store chime. */
 export function casesToAnnounce(state: State, now: Date): ReviewCase[] {
-  return state.cases.filter(
-    (c) => c.status === 'needs_review' && !c.chimeAnnouncedAt && now.getTime() - ms(c.openedAt) >= CHIME_AFTER_MS
-  )
+  return state.cases.filter((c) => c.status === 'needs_review' && !c.chimeAnnouncedAt && now.getTime() - ms(c.openedAt) >= CHIME_AFTER_MS)
 }

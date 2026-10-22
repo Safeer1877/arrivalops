@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: __dirname,
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {

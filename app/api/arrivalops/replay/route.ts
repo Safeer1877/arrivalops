@@ -14,5 +14,12 @@ export async function POST(request: NextRequest) {
   const vision = { latencyMs: 0, model: `${MODEL_ID} (recorded)`, ...s.vision }
   const result = recordObservation({ ...REPLAY_DEVICE, source: 'replay', frame: s.frame }, vision)
   const next = DEFAULT_STEPS[step + 1]
-  return NextResponse.json({ ...result, note: s.note, nextStep: next ? step + 1 : null, nextDelayMs: next?.delayMs ?? null })
+  return NextResponse.json({
+    ...result,
+    note: s.note,
+    step,
+    total: DEFAULT_STEPS.length,
+    nextStep: next ? step + 1 : null,
+    nextDelayMs: next?.delayMs ?? null,
+  })
 }

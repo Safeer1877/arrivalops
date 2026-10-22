@@ -6,7 +6,11 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"lib/arrivalops/**/*.ts\" \"app/components/desk/**/*.tsx\" \"app/components/desk/**/*.ts\" \"app/api/arrivalops/**/*.ts\" \"app/hooks/useArrivalOps.ts\" \"app/hooks/useFrameSampler.ts\" \"app/page.tsx\" \"app/layout.tsx\"",
+    "format:check": "prettier --check \"lib/arrivalops/**/*.ts\" \"app/components/desk/**/*.tsx\" \"app/components/desk/**/*.ts\" \"app/api/arrivalops/**/*.ts\" \"app/hooks/useArrivalOps.ts\" \"app/hooks/useFrameSampler.ts\" \"app/page.tsx\" \"app/layout.tsx\""
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1155.0",
@@ -24,8 +28,11 @@
     "@types/react": "18.2.46",
     "@types/react-dom": "18.2.18",
     "autoprefixer": "10.4.16",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.5.18",
     "null-loader": "^4.0.1",
     "postcss": "8.5.10",
+    "prettier": "^3.3.3",
     "tailwindcss": "3.4.0",
     "typescript": "5.3.3",
     "vitest": "^2.1.9"

@@ -3,7 +3,15 @@ import { ActionError } from './reconcile'
 import { dispatch, getState, recordObservation } from './store'
 
 const ctx = () => ({ now: new Date(), id: (p: string) => `${p}_${Math.random().toString(36).slice(2, 8)}` })
-const vision = { vehiclePresent: true as const, stopped: true as const, colour: 'silver', vehicleType: 'hatchback', confidence: 0.9, model: 't', latencyMs: 1 }
+const vision = {
+  vehiclePresent: true as const,
+  stopped: true as const,
+  colour: 'silver',
+  vehicleType: 'hatchback',
+  confidence: 0.9,
+  model: 't',
+  latencyMs: 1,
+}
 
 describe('dispatch', () => {
   it('rejects malformed actions with a 400', () => {

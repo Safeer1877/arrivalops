@@ -98,7 +98,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-dash-dark text-slate-200">
+    <div className="dark h-screen flex flex-col bg-dash-dark text-slate-200">
       <Header
         connected={isSimpleMode ? false : connected}
         enabledCount={isSimpleMode ? 0 : enabledCount}

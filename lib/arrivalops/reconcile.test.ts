@@ -1,16 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { computeMetrics } from './metrics'
-import {
-  ActionError,
-  casesToAnnounce,
-  confirmMatch,
-  dismiss,
-  handOver,
-  observe,
-  posCheckIn,
-  undo,
-  type Ctx,
-} from './reconcile'
+import { ActionError, casesToAnnounce, confirmMatch, dismiss, handOver, observe, posCheckIn, undo, type Ctx } from './reconcile'
 import type { Observation, Order, State } from './types'
 
 const T0 = new Date('2026-10-22T12:30:00Z')
@@ -38,7 +28,16 @@ function obs(min: number, vision: Partial<Observation['vision']> = {}, deviceId 
     at: at(min).toISOString(),
     source: 'synthetic',
     deviceId,
-    vision: { vehiclePresent: true, stopped: true, colour: 'silver', vehicleType: 'hatchback', confidence: 0.9, model: 'test', latencyMs: 5, ...vision },
+    vision: {
+      vehiclePresent: true,
+      stopped: true,
+      colour: 'silver',
+      vehicleType: 'hatchback',
+      confidence: 0.9,
+      model: 'test',
+      latencyMs: 5,
+      ...vision,
+    },
   }
 }
 
