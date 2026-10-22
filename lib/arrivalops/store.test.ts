@@ -35,3 +35,15 @@ describe('dispatch', () => {
     expect(after.canUndo).toMatch(/Hand over/)
   })
 })
+
+describe('boards', () => {
+  it('keeps each visitor board separate from the others and from the shop', () => {
+    dispatch({ action: 'reset' }, ctx(), 'visitor-a')
+    dispatch({ action: 'reset' }, ctx(), 'visitor-b')
+    const a = recordObservation({ deviceId: 'cam', source: 'synthetic' }, vision, ctx(), 'visitor-a')
+    expect(a.view.metrics.openCases).toBe(1)
+    expect(getState('visitor-b').cases).toHaveLength(0)
+    dispatch({ action: 'confirm', caseId: a.caseId!, orderId: a.view.cases[0].candidateOrderIds[0] }, ctx(), 'visitor-a')
+    expect(getState('visitor-b').orders.every((o) => o.checkIn?.source !== 'staff_rescue')).toBe(true)
+  })
+})

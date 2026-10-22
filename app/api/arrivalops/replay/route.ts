@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_STEPS, REPLAY_DEVICE } from '@/lib/arrivalops/replay'
-import { recordObservation } from '@/lib/arrivalops/store'
+import { boardFor, rememberBoard } from '@/lib/arrivalops/board'
+import { ctxNow, recordObservation } from '@/lib/arrivalops/store'
 import { MODEL_ID } from '@/lib/arrivalops/vision'
 
 export const dynamic = 'force-dynamic'
@@ -12,9 +13,10 @@ export async function POST(request: NextRequest) {
   const s = DEFAULT_STEPS[step]
   if (!Number.isInteger(step) || !s) return NextResponse.json({ error: 'Unknown replay step' }, { status: 400 })
   const vision = { latencyMs: 0, model: s.recorded ? `${MODEL_ID} (recorded)` : 'scripted answer', ...s.vision }
-  const result = recordObservation({ ...REPLAY_DEVICE, source: 'replay', frame: s.frame }, vision)
+  const board = boardFor(request)
+  const result = recordObservation({ ...REPLAY_DEVICE, source: 'replay', frame: s.frame }, vision, ctxNow(), board.boardId)
   const next = DEFAULT_STEPS[step + 1]
-  return NextResponse.json({
+  const res = NextResponse.json({
     ...result,
     note: s.note,
     step,
@@ -22,4 +24,5 @@ export async function POST(request: NextRequest) {
     nextStep: next ? step + 1 : null,
     nextDelayMs: next?.delayMs ?? null,
   })
+  return rememberBoard(res, board)
 }

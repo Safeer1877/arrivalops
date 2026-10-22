@@ -1,5 +1,6 @@
-// One shop's state, kept in memory and (optionally) persisted to disk so a restart doesn't lose the board.
-// Every change goes through `dispatch`, which validates input and returns the fresh view.
+// Board state, kept in memory. The shop's own board (live mode) can be persisted to disk so a restart doesn't
+// lose it; the hosted replay demo gives every visitor a separate throwaway board so nobody sees anyone
+// else's clicks. Every change goes through `dispatch`, which validates input and returns the fresh view.
 
 import { randomUUID } from 'crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
@@ -12,10 +13,13 @@ import type { Observation, State, VisionResult } from './types'
 
 const DATA_FILE = process.env.ARRIVALOPS_DATA_DIR ? join(process.env.ARRIVALOPS_DATA_DIR, 'state.json') : null
 
-const g = globalThis as unknown as { __arrivalops?: State }
+export const SHOP_BOARD = 'shop'
+const MAX_VISITOR_BOARDS = 500
 
-function load(): State {
-  if (DATA_FILE && existsSync(DATA_FILE)) {
+const g = globalThis as unknown as { __arrivalops?: Map<string, State> }
+
+function load(boardId: string): State {
+  if (boardId === SHOP_BOARD && DATA_FILE && existsSync(DATA_FILE)) {
     try {
       return JSON.parse(readFileSync(DATA_FILE, 'utf8'))
     } catch {
@@ -25,13 +29,21 @@ function load(): State {
   return seedState()
 }
 
-export function getState(): State {
-  g.__arrivalops ??= load()
-  return g.__arrivalops
+export function getState(boardId = SHOP_BOARD): State {
+  const boards = (g.__arrivalops ??= new Map())
+  let state = boards.get(boardId)
+  if (state) {
+    boards.delete(boardId) // re-insert so the Map's order doubles as least-recently-used
+  } else {
+    state = load(boardId)
+    if (boards.size >= MAX_VISITOR_BOARDS) boards.delete(boards.keys().next().value!)
+  }
+  boards.set(boardId, state)
+  return state
 }
 
-function save(state: State) {
-  if (!DATA_FILE) return
+function save(state: State, boardId: string) {
+  if (!DATA_FILE || boardId !== SHOP_BOARD) return
   mkdirSync(join(DATA_FILE, '..'), { recursive: true })
   const { undo: _u, ...rest } = state
   writeFileSync(DATA_FILE, JSON.stringify({ ...rest, observations: rest.observations.slice(0, 20) }))
@@ -63,11 +75,11 @@ const Action = z.discriminatedUnion('action', [
 ])
 export type ActionInput = z.infer<typeof Action>
 
-export function dispatch(input: unknown, ctx = ctxNow()) {
+export function dispatch(input: unknown, ctx = ctxNow(), boardId = SHOP_BOARD) {
   const parsed = Action.safeParse(input)
   if (!parsed.success) throw new ActionError(400, parsed.error.issues.map((i) => i.message).join('; '))
   const a = parsed.data
-  let state = getState()
+  let state = getState(boardId)
   switch (a.action) {
     case 'confirm':
       confirmMatch(state, a.caseId, a.orderId, ctx)
@@ -85,10 +97,11 @@ export function dispatch(input: unknown, ctx = ctxNow()) {
       undo(state, ctx)
       break
     case 'reset':
-      state = g.__arrivalops = seedState(ctx.now)
+      state = seedState(ctx.now)
+      g.__arrivalops!.set(boardId, state)
       break
   }
-  save(state)
+  save(state, boardId)
   return view(state, ctx.now)
 }
 
@@ -96,19 +109,20 @@ export function recordObservation(
   input: { deviceId: string; deviceName?: string; source: Observation['source']; frame?: string },
   vision: VisionResult,
   ctx = ctxNow(),
+  boardId = SHOP_BOARD,
 ) {
-  const state = getState()
+  const state = getState(boardId)
   const obs: Observation = { id: ctx.id('obs'), at: ctx.now.toISOString(), ...input, vision }
   const c = observe(state, obs, ctx)
-  save(state)
+  save(state, boardId)
   return { caseId: c?.id ?? null, view: view(state, ctx.now) }
 }
 
 /** Mark overdue cases as announced and return them; the caller plays them on the chime. */
-export function takeAnnouncements(ctx = ctxNow()) {
-  const state = getState()
+export function takeAnnouncements(ctx = ctxNow(), boardId = SHOP_BOARD) {
+  const state = getState(boardId)
   const due = casesToAnnounce(state, ctx.now)
   for (const c of due) c.chimeAnnouncedAt = ctx.now.toISOString()
-  if (due.length) save(state)
+  if (due.length) save(state, boardId)
   return due
 }
