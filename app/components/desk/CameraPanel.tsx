@@ -10,19 +10,33 @@ import { friendlyCameraError } from '@/lib/arrivalops/cameraErrors'
 import { ZoneLayer } from './ZoneLayer'
 
 /** One line under the picture: what the camera last saw in the bay, and which model said so. */
-function VisionStatus({ v, source, checking, idle }: { v?: VisionResult; source: string; checking?: boolean; idle: string }) {
-  const text = checking
-    ? 'Checking frame…'
-    : !v
-      ? idle
-      : v.error
-        ? 'Couldn’t check this frame. Still watching.'
-        : v.vehiclePresent === false
-          ? 'Bay clear'
-          : v.vehiclePresent === 'unclear'
-            ? 'Unsure, maybe a vehicle'
-            : `${[v.colour, v.vehicleType].filter(Boolean).join(' ') || 'Vehicle'} · ${v.stopped === true ? 'stopped' : v.stopped === false ? 'moving' : 'stopped?'}`
-  const dot = !v || checking ? 'bg-slate-500' : v.vehiclePresent === false ? 'bg-emerald-400' : 'bg-amber-400'
+function VisionStatus({
+  v,
+  source,
+  checking,
+  idle,
+  stalled,
+}: {
+  v?: VisionResult
+  source: string
+  checking?: boolean
+  idle: string
+  stalled?: boolean
+}) {
+  const text = stalled
+    ? 'Feed frozen. Not watching until it reconnects.'
+    : checking
+      ? 'Checking frame…'
+      : !v
+        ? idle
+        : v.error
+          ? 'Couldn’t check this frame. Still watching.'
+          : v.vehiclePresent === false
+            ? 'Bay clear'
+            : v.vehiclePresent === 'unclear'
+              ? 'Unsure, maybe a vehicle'
+              : `${[v.colour, v.vehicleType].filter(Boolean).join(' ') || 'Vehicle'} · ${v.stopped === true ? 'stopped' : v.stopped === false ? 'moving' : 'stopped?'}`
+  const dot = stalled ? 'bg-rose-500' : !v || checking ? 'bg-slate-500' : v.vehiclePresent === false ? 'bg-emerald-400' : 'bg-amber-400'
   return (
     <div title={v?.error} className="flex h-8 items-center gap-2 bg-slate-950 px-3 text-xs text-slate-200">
       <span className={`h-1.5 w-1.5 flex-none rounded-full ${dot}`} aria-hidden />
@@ -55,7 +69,7 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
   const [device, setDevice] = useState<{ id: string; name: string } | null>(null)
   const [deviceError, setDeviceError] = useState<string | null>(null)
   const { streamActive, streamError, startStream, stopStream } = useWebRTCStream({ videoRef, deviceId: device?.id })
-  const { last, checking } = useFrameSampler({
+  const { last, checking, stalled } = useFrameSampler({
     videoRef,
     enabled: live && streamActive,
     deviceId: device?.id,
@@ -131,6 +145,21 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
                 )}
               </div>
             )}
+            {streamActive && stalled && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55 text-center">
+                <p className="text-sm font-semibold text-white">The camera feed has frozen</p>
+                <p className="max-w-xs px-4 text-xs text-white/75">Nothing new is being checked until it reconnects.</p>
+                <button
+                  onClick={async () => {
+                    await stopStream()
+                    await startStream()
+                  }}
+                  className="rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-900 hover:bg-slate-100"
+                >
+                  Reconnect
+                </button>
+              </div>
+            )}
             {streamActive && (
               <button
                 onClick={stopStream}
@@ -177,6 +206,7 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
           checking={checking}
           source="Ring live"
           idle={streamActive ? 'Watching. Frames are only sent when the bay changes.' : 'Camera not started'}
+          stalled={streamActive && stalled}
         />
       ) : (
         <VisionStatus
