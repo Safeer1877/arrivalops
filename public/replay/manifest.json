@@ -61,5 +61,6 @@
       "bytes": 207515,
       "sha256": "831741918844343d4dffb91e5deacb33565a8f4626707c082c84da09409264b2"
     }
-  ]
+  ],
+  "display_crop": "lot-car-in-bay.jpg and lot-bays-clear.jpg are cropped to 1216x684 (x 44-1260, y 0-684) to remove the left pillarbox bar and the burned-in bottom timestamp strip (2023 recording date and 2026 stream time). The Device ID / Partner overlay at the top is kept. No other edits."
 }

@@ -9,15 +9,17 @@ import { DemoControls } from './components/desk/DemoControls'
 import { Kpis } from './components/desk/Kpis'
 import { Logo } from './components/desk/Logo'
 import { PickupQueue } from './components/desk/PickupQueue'
+import { MissedCard } from './components/desk/MissedCard'
 import { WatchingCard } from './components/desk/WatchingCard'
 import { announce, useArrivalOps } from './hooks/useArrivalOps'
+import type { Order } from '@/lib/arrivalops/types'
 
 const SHOP = process.env.NEXT_PUBLIC_SHOP_NAME || 'Corner Kitchen'
 
 export default function Desk() {
   const [soundOn, setSoundOn] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
-  const { view, offline, notice, busy, act, refresh, replay, startReplay, stopReplay } = useArrivalOps({ soundOn })
+  const { view, offline, notice, busy, act, refresh, replay, startReplay, stopReplay, driveOff } = useArrivalOps({ soundOn })
   const [now, setNow] = useState(() => Date.now())
   const [forceReplay, setForceReplay] = useState(false)
 
@@ -43,6 +45,10 @@ export default function Desk() {
   // A customer who gave up in the last 15 minutes stays visible so someone can call them.
   const missed = view.cases.find((c) => c.status === 'left' && c.resolvedAt && now - new Date(c.resolvedAt).getTime() < 15 * 60_000)
   const missedText = missed && view.activity.find((a) => a.kind === 'left' && a.caseId === missed.id)?.text
+  const missedOrders = (missed?.candidateOrderIds ?? [])
+    .map((id) => view.orders.find((o) => o.id === id))
+    .filter((o): o is Order => Boolean(o && !o.checkIn && !o.handedOverAt))
+    .slice(0, 3)
 
   return (
     <main className="min-h-screen bg-stone-100 text-slate-900">
@@ -122,13 +128,12 @@ export default function Desk() {
               />
             ))}
             {missedText && (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
-                <p className="text-sm font-semibold uppercase tracking-wide text-rose-700">Missed pickup</p>
-                <p className="mt-1 font-semibold text-slate-900">{missedText}.</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  Their order is still on the shelf. Check the queue for who was due and give them a call.
-                </p>
-              </div>
+              <MissedCard
+                text={missedText}
+                orders={missedOrders}
+                obs={view.observations.find((o) => o.id === missed?.observationIds.at(-1))}
+                now={now}
+              />
             )}
             {!active.length && !watching.length && (
               <div className="rounded-2xl border border-dashed border-stone-300 px-5 py-4 text-center">
@@ -161,6 +166,8 @@ export default function Desk() {
                 settings={view.settings}
                 busy={busy}
                 act={act}
+                canDriveOff={active.some((c) => c.status === 'needs_review') || watching.length > 0}
+                onDriveOff={driveOff}
                 onReset={() => {
                   stopReplay()
                   act({ action: 'reset' })

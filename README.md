@@ -4,7 +4,7 @@
 
 A takeaway has three orders ready. A car pulls into the pickup bay, but the driver never taps "I'm here". Staff are busy, the food goes cold, and the customer phones in, annoyed, or drives off. Ordering systems like Toast and Square only know about customers who check in. **ArrivalOps handles the exception**: the shop's Ring camera notices a car waiting in the bay, ArrivalOps checks it against the ready orders that have no check-in, and staff get one clear card. They ask the driver's name, tap the order, hand it over, and the arrival-to-handover time is recorded.
 
-![Pickup desk with a car waiting and no check-in](docs/screenshots/3-case.png)
+![Pickup desk with a car waiting and no check-in](docs/screenshots/2-case.png)
 
 ## What it does
 
@@ -27,7 +27,7 @@ Every staff action can be undone, settings (bay, dwell, call-out delay) are per 
 
 ## Try it
 
-**Hosted demo (no account needed):** _link added at submission_. It opens in **Replay** mode: real frames from the Ring Developer Playground *Vehicle* stream played in a staged order (the Playground clip has no car that arrives and waits). Until recorded Bedrock answers are added, the vehicle answers in replay are labelled “scripted answer”. Press **Play recorded arrival**. Let it run to the end to see a missed pickup, or press **Play again** and match the driver to their order. Each visitor gets their own board, and the **Demo controls** panel stands in for the ordering system (a customer tapping "I'm here", restarting the lunch rush). Demo timings are shortened (6 s dwell, 20 s call-out) and say so on screen.
+**Hosted demo (no account needed):** _link added at submission_. It opens in **Replay** mode: real frames from the Ring Developer Playground *Vehicle* stream played in a staged order (the Playground clip has no car that arrives and waits). Until recorded Bedrock answers are added, the vehicle answers in replay are labelled “scripted answer”. Press **Play recorded arrival**. The driver waits until you match them to their order. To see a missed pickup instead, press **Driver gives up and leaves** in Demo controls. Each visitor gets their own board, and the **Demo controls** panel stands in for the ordering system (a customer tapping "I'm here", restarting the lunch rush). Demo timings are shortened (6 s dwell, 20 s call-out) and say so on screen.
 
 **Run it yourself:**
 

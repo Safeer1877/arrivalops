@@ -86,7 +86,7 @@ export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, a
           <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
             {unclear ? 'Camera unsure · please check' : 'Waiting · no check-in'}
           </p>
-          <h3 className="mt-1 text-xl font-bold leading-tight text-slate-900">{vehicleLabel(obs)} in the pickup bay</h3>
+          <h3 className="mt-1 text-balance text-xl font-bold leading-tight text-slate-900">{vehicleLabel(obs)} in the pickup bay</h3>
           <p className="mt-1 text-slate-600">
             Waiting <span className={`font-semibold tabular-nums ${urgent ? 'text-amber-700' : 'text-slate-900'}`}>{clock(waiting)}</span>
             {c.chimeAnnouncedAt && ' · called out on the counter tablet'}

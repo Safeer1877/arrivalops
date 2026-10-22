@@ -11,6 +11,7 @@ export interface Order {
   readyAt: string // ISO
   pickupAt: string // promised pickup time, ISO
   vehicleHint?: string // optional, customer-provided at checkout ("grey hatchback")
+  phone?: string // from the ordering system, so staff can call a customer who left
   checkIn?: { at: string; source: CheckInSource }
   handedOverAt?: string
 }

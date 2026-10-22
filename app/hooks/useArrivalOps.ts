@@ -121,7 +121,21 @@ export function useArrivalOps({ soundOn }: { soundOn: boolean }) {
 
   useEffect(() => stopReplay, [stopReplay])
 
-  return { view, offline, notice, busy, act, refresh, replay, startReplay, stopReplay }
+  /** Demo control: the driver in the bay gives up and drives off. */
+  const driveOff = useCallback(async () => {
+    stopReplay()
+    const res = await fetch('/api/arrivalops/replay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ step: 'leave' }),
+    }).catch(() => null)
+    if (!res?.ok) return showNotice('That didn’t go through. Try again.')
+    const data = await res.json()
+    setView((v) => (v ? { ...data.view, mode: v.mode } : v))
+    setReplay((r) => ({ ...r, note: data.note, step: data.step, total: data.total }))
+  }, [stopReplay, showNotice])
+
+  return { view, offline, notice, busy, act, refresh, replay, startReplay, stopReplay, driveOff }
 }
 
 /** Two-tone chime plus a spoken line, for a counter tablet that nobody is looking at. */

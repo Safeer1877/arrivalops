@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_STEPS, REPLAY_DEVICE } from './replay'
+import { DEFAULT_STEPS, DRIVE_OFF, REPLAY_DEVICE } from './replay'
 import { dispatch, getState, recordObservation, restartReplay, view } from './store'
 
 describe('replay recording', () => {
@@ -33,8 +33,20 @@ describe('replay recording', () => {
     expect(view.orders.find((o) => o.id === open[0].candidateOrderIds[0])?.vehicleHint).toBe('grey hatchback')
   })
 
-  it('ends with the customer driving off if nobody comes out', () => {
+  it('keeps the driver waiting at the end, so the visitor decides what happens', () => {
     const view = play(DEFAULT_STEPS.length)
+    expect(view.cases[0].status).toBe('needs_review')
+    expect(view.metrics.missedToday).toBe(0)
+  })
+
+  it('records a missed pickup when the demo driver gives up', () => {
+    play(DEFAULT_STEPS.length)
+    const view = recordObservation(
+      { ...REPLAY_DEVICE, source: 'replay', frame: DRIVE_OFF.frame },
+      { latencyMs: 0, model: 'recorded', ...DRIVE_OFF.vision },
+      { now: new Date(Date.now() + 120_000), id: (p) => `${p}_leave` },
+      'replay-test',
+    ).view
     expect(view.cases[0].status).toBe('left')
     expect(view.metrics.missedToday).toBe(1)
   })

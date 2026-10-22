@@ -10,6 +10,8 @@ interface Props {
   settings: DeskSettings
   busy: boolean
   act: (a: ActionInput) => void
+  canDriveOff: boolean
+  onDriveOff: () => void
   onReset: () => void
 }
 
@@ -17,7 +19,7 @@ interface Props {
  * Stand-ins for the parts of a real shop this demo doesn't connect to: the ordering app's "I'm here" button
  * and a fresh lunch rush. Kept apart from the staff view so nobody mistakes them for product features.
  */
-export function DemoControls({ orders, settings, busy, act, onReset }: Props) {
+export function DemoControls({ orders, settings, busy, act, canDriveOff, onDriveOff, onReset }: Props) {
   const waiting = orders.filter((o) => !o.checkIn && !o.handedOverAt)
   const [orderId, setOrderId] = useState('')
   // Default to a customer who didn't describe their car, so one tap doesn't spoil the replay's match.
@@ -57,15 +59,30 @@ export function DemoControls({ orders, settings, busy, act, onReset }: Props) {
         </button>
       </div>
 
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button
+          disabled={busy || !canDriveOff}
+          onClick={onDriveOff}
+          title={canDriveOff ? undefined : 'Play the recorded arrival first'}
+          className="min-h-11 rounded-lg bg-white px-3 font-semibold text-slate-700 ring-1 ring-stone-300 hover:bg-stone-50 disabled:opacity-50"
+        >
+          Driver gives up and leaves
+        </button>
+        <button
+          disabled={busy}
+          onClick={onReset}
+          className="min-h-11 rounded-lg bg-white px-3 font-semibold text-slate-700 ring-1 ring-stone-300 hover:bg-stone-50 disabled:opacity-50"
+        >
+          Start the lunch rush again
+        </button>
+      </div>
+
       {settings.demoTiming && (
         <p className="mt-3 text-slate-500">
-          Demo timing: alert after {settings.dwellSeconds} s, call-out after {settings.calloutSeconds} s. In a real shop:{' '}
-          {SHOP_SETTINGS.dwellSeconds} s and {SHOP_SETTINGS.calloutSeconds} s.
+          Demo timing: staff are alerted after a car has waited {settings.dwellSeconds} s, and the tablet speaks {settings.calloutSeconds} s
+          after that. In a real shop: {SHOP_SETTINGS.dwellSeconds} s, then another {SHOP_SETTINGS.calloutSeconds} s.
         </p>
       )}
-      <button disabled={busy} onClick={onReset} className="mt-2 min-h-11 rounded-lg px-3 text-slate-500 hover:bg-stone-200">
-        Start the lunch rush again
-      </button>
     </section>
   )
 }

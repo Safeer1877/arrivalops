@@ -1,7 +1,10 @@
 const CURRENCY = process.env.NEXT_PUBLIC_CURRENCY || 'USD'
 
+// Whole amounts drop the cents ("$44"); others keep them ("$18.50"), so the tiles add up to the rows.
 export const money = (cents: number) =>
-  new Intl.NumberFormat(undefined, { style: 'currency', currency: CURRENCY, maximumFractionDigits: 0 }).format(cents / 100)
+  new Intl.NumberFormat(undefined, { style: 'currency', currency: CURRENCY, minimumFractionDigits: cents % 100 ? 2 : 0 }).format(
+    cents / 100,
+  )
 
 export function clock(seconds: number | null): string {
   if (seconds === null) return '—'
