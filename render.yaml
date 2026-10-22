@@ -1,0 +1,18 @@
+# One-click hosting of the public demo on Render (free web service). No Ring token is set, so the desk opens in
+# Replay mode and every visitor gets their own board. Vehicle answers come from the on-device detector; Bedrock
+# is switched off here because the demo host has no AWS account.
+services:
+  - type: web
+    name: arrivalops
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npx next start -p $PORT
+    healthCheckPath: /api/arrivalops
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VISION_PROVIDER
+        value: on-device
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
