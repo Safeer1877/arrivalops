@@ -1,0 +1,65 @@
+{
+  "source": "Ring Developer Playground, Vehicle simulation, live WHEP stream via ring-api-helloworld (device ...EFVVL7)",
+  "provenance_note": "Real Playground media, but the clip is archival footage (in-video timestamp 2023-03-27 CDT). The Ring event history logged this session as on_demand (12:01:39-12:02:01Z), not as a motion or vehicle event.",
+  "capture_time_basis": "UTC overlay burned into each frame by the Playground",
+  "resolution": "1280x720, JPEG quality 80",
+  "plate_check": "Checked frames 00 and 05 enlarged 3x: plates unreadable; other frames show no plate-facing vehicle at legible size. No redaction applied.",
+  "frames": [
+    {
+      "file": "01.jpg",
+      "source_frame": "frames-vehicle/frame-00.jpg",
+      "captured_at_utc": "2026-10-22T12:01:47Z",
+      "description": "Lot camera: three cars parked in rear 'SENIOR' bays; grey hatchback in the foreground at lower right.",
+      "bytes": 270484,
+      "sha256": "1eaf6d2696e9b85db89f315ff74b178eb4d6b65d7c20eb7c97d6f4fbc2841932"
+    },
+    {
+      "file": "02.jpg",
+      "source_frame": "frames-vehicle/frame-01.jpg",
+      "captured_at_utc": "2026-10-22T12:01:48Z",
+      "description": "Lot camera: foreground hatchback has moved out of frame to the right (vehicle moving); rear bays unchanged.",
+      "bytes": 283044,
+      "sha256": "243a863fb4650e52d7ed24edce0372f6cc300b3ea2a5f7de120d28a1d3479a85"
+    },
+    {
+      "file": "03.jpg",
+      "source_frame": "frames-vehicle/frame-03.jpg",
+      "captured_at_utc": "2026-10-22T12:01:50Z",
+      "description": "Driveway camera (scene cut): grey hatchback at upper left beside the parked van, side-on.",
+      "bytes": 204916,
+      "sha256": "1aebb48d4899d5d134747e4e9138578651eefb7fb74638c01e6e006f409e7835"
+    },
+    {
+      "file": "04.jpg",
+      "source_frame": "frames-vehicle/frame-05.jpg",
+      "captured_at_utc": "2026-10-22T12:01:52Z",
+      "description": "Driveway camera: grey hatchback driving across the top of the frame toward the dumpster (vehicle moving).",
+      "bytes": 208400,
+      "sha256": "6664f9241f0da29a1af24a16baa417ec85e2ee7c115d58707c491ef385573817"
+    },
+    {
+      "file": "05.jpg",
+      "source_frame": "frames-vehicle/frame-08.jpg",
+      "captured_at_utc": "2026-10-22T12:01:55Z",
+      "description": "Driveway camera: hatchback gone; a dark car is visible far away at top, near the parked van.",
+      "bytes": 207087,
+      "sha256": "9dc42c17f79494b7e10d25e33016afce1dc5e9d1361dee87e3ea9b3fd62ac6cc"
+    },
+    {
+      "file": "06.jpg",
+      "source_frame": "frames-vehicle/frame-11.jpg",
+      "captured_at_utc": "2026-10-22T12:01:57Z",
+      "description": "Driveway camera: dark SUV moving in the far lot at top; foreground driveway empty.",
+      "bytes": 208238,
+      "sha256": "446a7c1bb7de30106e5230d53327ae31bbf2a5863c644b328852be068b3e0ba9"
+    },
+    {
+      "file": "07.jpg",
+      "source_frame": "frames-vehicle/frame-14.jpg",
+      "captured_at_utc": "2026-10-22T12:02:00Z",
+      "description": "Driveway camera: foreground bay clear; only parked cars at upper left (stream froze from here).",
+      "bytes": 207515,
+      "sha256": "831741918844343d4dffb91e5deacb33565a8f4626707c082c84da09409264b2"
+    }
+  ]
+}
