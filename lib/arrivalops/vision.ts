@@ -93,18 +93,17 @@ export async function classifyFrame(jpeg: Uint8Array): Promise<VisionResult> {
   }
 }
 
-// Bedrock is the optional second opinion on top of the on-device detector. It is tried when AWS credentials are
-// configured (or VISION_PROVIDER=bedrock), never when VISION_PROVIDER=on-device. When it fails the desk carries on
-// with the detector's answer and rests Bedrock for a while, so a restricted account doesn't add an error per frame.
+// Bedrock is the optional second opinion on top of the on-device detector. It is tried unless
+// VISION_PROVIDER=on-device; credentials come from the usual AWS chain (env, ~/.aws, a role). When it fails the desk
+// carries on with the detector's answer and rests Bedrock for a while, so a missing or restricted account costs one
+// failed call every few minutes, not an error per frame.
 const REST_AFTER_REFUSAL_MS = 10 * 60_000
 const REST_AFTER_FAILURE_MS = 60_000
 let bedrockRestingUntil = 0
 let bedrockError: string | undefined
 
 export function bedrockConfigured(): boolean {
-  const choice = process.env.VISION_PROVIDER
-  if (choice === 'on-device') return false
-  return choice === 'bedrock' || Boolean(process.env.AWS_ACCESS_KEY_ID || process.env.AWS_PROFILE)
+  return process.env.VISION_PROVIDER !== 'on-device'
 }
 
 export type BedrockState = { state: 'off' } | { state: 'active' } | { state: 'unavailable'; error: string }

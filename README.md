@@ -42,7 +42,7 @@ npm test                       # reconciliation, vision parsing and API tests
 |---|---|
 | `RING_ACCESS_TOKEN` | Token from the [Ring Developer Playground](https://developer.amazon.com/ring/console/playground). Switches the desk to **Live** mode. |
 | `AWS_REGION`, AWS credentials | Optional. Bedrock second opinion for live frames (default region `us-east-1`). Without them the on-device detector does the job alone. |
-| `VISION_PROVIDER` | `on-device` to never call Bedrock, `bedrock` to always try it. Unset: try Bedrock when AWS credentials are present, and fall back to the detector if it refuses. |
+| `VISION_PROVIDER` | `on-device` to never call Bedrock. Unset: Bedrock is tried with the usual AWS credential chain, and the detector's answer is used whenever Bedrock refuses or is unreachable (Bedrock then rests for 10 minutes). |
 | `BEDROCK_MODEL_ID` | Defaults to `us.amazon.nova-lite-v1:0`. |
 | `ARRIVALOPS_DATA_DIR` | Optional folder to persist the board across restarts. |
 | `NEXT_PUBLIC_SHOP_NAME`, `NEXT_PUBLIC_CURRENCY` | Branding for the desk. |
