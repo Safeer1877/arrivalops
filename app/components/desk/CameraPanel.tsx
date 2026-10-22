@@ -91,6 +91,7 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
             disabled={busy || editingZone}
             onClick={() => setEditingZone(true)}
             title={settings.zone ? 'Only the marked bay is checked; cars parked elsewhere are ignored' : 'The whole picture is checked'}
+            aria-label={settings.zone ? 'Edit bay' : 'Mark pickup bay'}
             className="h-7 rounded-md px-2.5 text-xs font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-900 disabled:opacity-40"
           >
             {settings.zone ? 'Edit bay' : 'Mark pickup bay'}

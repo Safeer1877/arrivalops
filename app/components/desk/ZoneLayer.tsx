@@ -23,9 +23,12 @@ export function ZoneLayer({ zone, editing, onSave, onCancel }: Props) {
   const [start, setStart] = useState<{ x: number; y: number } | null>(null)
   const [draft, setDraft] = useState<Zone | null>(null)
 
+  // Seed the draft once, when editing starts. The board polls every 2 s and hands back a fresh zone object each
+  // time; re-seeding on that would snap a half-drawn box back to the saved one.
   useEffect(() => {
     if (editing) setDraft(zone)
-  }, [editing, zone])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing])
 
   const point = (e: PointerEvent) => {
     const r = surface.current!.getBoundingClientRect()
