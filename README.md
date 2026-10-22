@@ -1,358 +1,83 @@
-# Ring API Hello World
+# ArrivalOps
 
-Get started with the [Ring Partner API](https://developer.amazon.com/docs/ring/api-documentation.html) — explore device APIs from your terminal and stream live video in your browser.
+**See the customer who never checked in.** Ring-powered curbside rescue for small businesses.
 
-![Next.js](https://img.shields.io/badge/Next.js-14-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
-![Python](https://img.shields.io/badge/Python-3.8+-blue)
+A takeaway has three orders ready. A car pulls into the pickup bay, but the driver never taps "I'm here". Staff are busy, the food goes cold, and the customer phones in, annoyed, or drives off. Ordering systems like Toast and Square only know about customers who check in. **ArrivalOps covers the ones who don't**: the shop's Ring camera notices a car waiting in the bay, ArrivalOps checks it against the ready orders that have no check-in, and staff get one clear card. They ask the driver's name, tap the order, hand it over, and the arrival-to-handover time is recorded.
 
-## What's Inside
+![Pickup desk with a car waiting and no check-in](docs/screenshots/2-case.png)
 
-| Path | What it does | You need |
-|------|-------------|----------|
-| `scripts/` | Python scripts to call Ring APIs from your terminal | Python 3.8+ and a token |
-| `app/` | Next.js web app with live video streaming and real-time event dashboard | Node.js 18+ and a token |
+## What it does
 
----
+| Step | What happens | Built with |
+|---|---|---|
+| 1. Watch | The pickup desk streams the shop's Ring camera and samples frames. Only frames where the scene changed are sent on, plus a slow heartbeat, following Ring's guidance to filter early. | Ring Partner API: device discovery, WHEP live video |
+| 2. Check | One narrow question goes to a Bedrock vision model: is a vehicle *waiting* in the bay? Coarse attributes only (colour, body type). Licence plates and people are never read, and output is validated against a strict schema. | Amazon Bedrock (Nova Lite, Converse API) |
+| 3. Reconcile | A car that's waiting is matched against ready orders with no check-in that are due around now. If every waiting customer already checked in, nothing happens. Repeat sightings fold into one case. | `lib/arrivalops/reconcile.ts` |
+| 4. Rescue | Staff see "Silver hatchback in the pickup bay · waiting 0:42" and up to three candidate orders, best guess first (for example, a customer who said "silver hatchback" at checkout). They confirm with the driver. ArrivalOps never contacts or identifies anyone on its own. | Staff desk (Next.js) |
+| 5. Call out | If nobody acts within 45 seconds, the counter tablet chimes and says "A car is waiting in the pickup bay with no check-in." | Web Audio + speech |
+| 6. Measure | Food going cold (value of overdue, unclaimed orders), cars rescued today, median time to notice, and median arrival-to-handover. | `lib/arrivalops/metrics.ts` |
 
-> 🚀 **Coming from the [Ring Developer Playground](https://developer.amazon.com/ring/console/playground)?**
->
-> You already have a token — jump straight to:
-> - **[Explore APIs from your terminal →](#step-2-explore-apis-python-scripts)** (Python, no web app needed)
-> - **[Live stream in your browser →](#step-3-live-video-stream-web-app)** (Node.js, one command)
+Every staff action can be undone, and a customer who checks in late through the app closes the case automatically.
 
----
+## Why it matters
 
-## Step 1: Get Your Token
+- Pickup and curbside are now a normal part of restaurant and retail sales, and every one of those businesses runs on the assumption that customers announce themselves.
+- When they don't, the cost is concrete: food remade or thrown away, a refund, a one-star review, and a lost regular. The "Food going cold" tile puts a number on it every minute of the day.
+- The shop already owns the camera. ArrivalOps turns a security device into an operations tool without new hardware, which suits small shops that will never buy a dedicated license-plate system.
 
-1. Go to the [Ring Developer Playground](https://developer.amazon.com/ring/console/playground)
-2. Click **Generate Token**
-3. Copy the access token
+## Try it
 
-The Playground gives you a short-lived access token (~30 minutes) that works with all Ring APIs. No app registration, OAuth setup, or client credentials needed — just the token.
+**Hosted demo (no account needed):** _link added at submission_. It opens in **Replay** mode: a recorded run of the Ring Developer Playground *Vehicle* stream, with the Bedrock answers captured during recording. Press **Play recorded arrival**, then work the case.
 
-> **Note:** When the token expires, return to the Playground and generate a fresh one.
-
----
-
-## Step 2: Explore APIs (Python Scripts)
-
-Call any Ring API directly from your terminal. Each script is a self-contained code snippet you can copy into your own project.
-
-### Setup
+**Run it yourself:**
 
 ```bash
-cd scripts
-pip install -r requirements.txt
-```
-
-### Usage
-
-Run the interactive explorer:
-
-```bash
-python explore_apis.py --token "eyJ..."
-```
-
-This shows a menu where you pick which API to call:
-
-```
-=== Ring API Explorer ===
-Use your token to call any Ring API.
-
-1. List Devices
-2. Device Status
-3. Device Capabilities
-4. Device Location
-5. Device Configurations
-6. Event History
-7. User Profile
-8. Run All
-0. Exit
-
-Select an API to call:
-```
-
-Or run individual scripts directly:
-
-```bash
-# List all your devices
-python list_devices.py --token "eyJ..."
-
-# Check if a device is online
-python device_status.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
-
-# Get device capabilities (video codecs, motion detection, etc.)
-python device_capabilities.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
-
-# Get device location (country/state)
-python device_location.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
-
-# Get device configurations (motion zones, privacy zones)
-python device_configurations.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
-
-# Get event history (motion events, doorbell presses, live views)
-python event_history.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
-
-# Get your user profile
-python user_profile.py --token "eyJ..."
-```
-
-> **Tip:** If you don't pass `--device-id`, scripts that need one will auto-discover your first device.
-
-Each script prints the equivalent `curl` command so you can copy it into Postman, your own code, or any HTTP client:
-
-```
-→ GET https://api.amazonvision.com/v1/devices
-  curl -X GET "https://api.amazonvision.com/v1/devices" \
-    -H "Authorization: Bearer $TOKEN"
-```
-
-### Available Scripts
-
-| Script | API Endpoint | Description |
-|--------|-------------|-------------|
-| `list_devices.py` | `GET /v1/devices` | List all accessible devices |
-| `device_status.py` | `GET /v1/devices/{id}/status` | Check if device is online/offline |
-| `device_capabilities.py` | `GET /v1/devices/{id}/capabilities` | Video codecs, motion detection, image enhancements |
-| `device_location.py` | `GET /v1/devices/{id}/location` | Country and state (for compliance) |
-| `device_configurations.py` | `GET /v1/devices/{id}/configurations` | Motion zones, privacy zones, image settings |
-| `event_history.py` | `GET /v1/history/devices/{id}/events` | Past motion, doorbell, and live view events |
-| `user_profile.py` | `GET /v1/users/me` | Your Ring account ID, name, and email |
-| `explore_apis.py` | All of the above | Interactive menu to call any API |
-
----
-
-## Step 3: Live Video Stream (Web App)
-
-Stream live video from a Ring device directly in your browser using WebRTC.
-
-### Setup
-
-```bash
-# Install dependencies
 npm install
-
-# Create your environment file
-cp .env.example .env.local
+cp .env.example .env.local     # add RING_ACCESS_TOKEN for live mode; leave empty for replay
+npm run dev                    # http://localhost:3000
+npm test                       # reconciliation, vision parsing and API tests
 ```
 
-Edit `.env.local` and paste your token from Step 1:
+| Variable | Purpose |
+|---|---|
+| `RING_ACCESS_TOKEN` | Token from the [Ring Developer Playground](https://developer.amazon.com/ring/console/playground). Switches the desk to **Live** mode. |
+| `AWS_REGION`, AWS credentials | Bedrock access for live frames (default region `us-east-1`). |
+| `BEDROCK_MODEL_ID` | Defaults to `us.amazon.nova-lite-v1:0`. |
+| `ARRIVALOPS_DATA_DIR` | Optional folder to persist the board across restarts. |
+| `NEXT_PUBLIC_SHOP_NAME`, `NEXT_PUBLIC_CURRENCY` | Branding for the desk. |
 
-```env
-RING_ACCESS_TOKEN=eyJ...paste_your_token_here
-```
+## What's real and what's simulated
 
-### Run
+Judges should never have to guess, so here it is plainly:
 
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-The app will:
-1. Auto-discover devices associated with your token
-2. Show a **Start Live Stream** button
-3. Click it to begin a WebRTC live video stream from your Ring device
-
-When the token expires, paste a fresh one from the Playground into `.env.local` and restart the server.
-
----
-
-## Advanced: Full Dashboard (Refresh Token Mode)
-
-For production integrations with long-lived sessions, the app supports OAuth refresh tokens with auto-renewal. This mode shows the full dashboard including webhook events, video processors, and canvas overlays.
-
-### Setup
-
-```env
-RING_REFRESH_TOKEN=your_refresh_token_here
-RING_CLIENT_ID=your_client_id_here
-RING_CLIENT_SECRET=your_client_secret_here
-```
-
-All three variables are required. The app automatically refreshes the access token when it expires.
-
-See [Authentication](https://developer.amazon.com/docs/ring/authentication.html) for how to obtain refresh tokens through the OAuth account linking flow, and [Configure Your Ring Application](https://developer.amazon.com/docs/ring/app-registration.html) for how to get your client credentials.
-
-### Device ID (Optional)
-
-```env
-NEXT_PUBLIC_RING_DEVICE_ID=your_device_id_here
-```
-
-If set, the app uses this device directly instead of auto-discovering.
-
-### Important
-
-Do not set both `RING_ACCESS_TOKEN` and `RING_REFRESH_TOKEN` — the app will show a configuration error. Use one or the other.
-
----
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `RING_ACCESS_TOKEN` | Access token from the [Playground](https://developer.amazon.com/ring/console/playground) | Yes (if not using refresh token) |
-| `RING_REFRESH_TOKEN` | OAuth refresh token from [account linking](https://developer.amazon.com/docs/ring/authentication.html) | Yes (if not using access token) |
-| `RING_CLIENT_ID` | OAuth client ID from [app registration](https://developer.amazon.com/docs/ring/app-registration.html) | Yes (only with refresh token) |
-| `RING_CLIENT_SECRET` | OAuth client secret from [app registration](https://developer.amazon.com/docs/ring/app-registration.html) | Yes (only with refresh token) |
-| `NEXT_PUBLIC_RING_DEVICE_ID` | Device ID (skips auto-discovery) | No |
-| `NEXT_PUBLIC_RING_DEVICE_NAME` | Display name for the device | No |
-| `RING_WEBHOOK_SECRET` | Bearer token for [webhook auth](https://developer.amazon.com/docs/ring/notifications.html) | No |
-
----
-
-## Features
-
-### Access Token Mode (Playground)
-- **Live Video Streaming** — WebRTC-based low-latency video from Ring devices
-- **Auto Device Discovery** — Automatically finds devices linked to your token
-- **Simplified UI** — Full-screen live view, no distractions
-
-### Refresh Token Mode (Production)
-- Everything above, plus:
-- **Webhook Events** — Real-time SSE for Ring camera webhooks (motion, doorbell, etc.)
-- **Video Processors** — Plugin system for real-time video analysis
-- **Hand Tracking Game** — Catch-the-box game using MediaPipe hand detection
-- **Canvas Overlays** — Bounding boxes, heatmaps, and visual effects
-
----
+| Real | Simulated (and labelled in the UI) |
+|---|---|
+| Ring Partner API calls: device discovery and WHEP live video from the Developer Playground | Orders, customers and "I'm here" app check-ins (demo data; no POS connection in this build) |
+| Amazon Bedrock vision calls on frames from that video | Replay mode re-plays a recorded Playground session for visitors without a Ring token |
+| Reconciliation, metrics, undo and the staff desk | The Playground's simulated streams appear in Ring event history as on-demand views, not motion events, so live mode samples the stream itself instead of waiting for a webhook |
 
 ## Architecture
 
 ```
-scripts/
-├── explore_apis.py            # Interactive API explorer
-├── list_devices.py            # GET /v1/devices
-├── device_status.py           # GET /v1/devices/{id}/status
-├── device_capabilities.py     # GET /v1/devices/{id}/capabilities
-├── device_location.py         # GET /v1/devices/{id}/location
-├── device_configurations.py   # GET /v1/devices/{id}/configurations
-├── event_history.py           # GET /v1/history/devices/{id}/events
-├── user_profile.py            # GET /v1/users/me
-└── requirements.txt           # Python dependencies
-
-app/
-├── page.tsx                   # Main dashboard
-├── components/                # UI components
-├── hooks/
-│   ├── useWebRTCStream.ts     # WebRTC connection management
-│   ├── useEventStream.ts      # SSE with auto-reconnect
-│   └── useCanvasOverlay.ts    # Optimized render loop
-└── api/
-    ├── webhook/               # Webhook receiver + SSE endpoint
-    └── ring/                  # Ring API integration
-        ├── config/            # Auth mode detection
-        ├── devices/           # Device discovery + status
-        ├── stream/            # WebRTC WHEP live streaming
-        ├── events/            # Event history
-        └── token/             # Token info
-
-lib/
-├── auth.ts                    # Token management (access token / refresh token)
-├── video-processors/          # Plugin system for video analysis
-├── schemas/                   # Zod validation schemas
-└── sse-broadcast.ts           # SSE client management
+Ring camera (Developer Playground)
+   │  WHEP live video (Ring Partner API)
+   ▼
+Staff desk (browser) ── changed frames only ──▶ /api/arrivalops/observe
+                                                  │  Bedrock Converse (Nova Lite), 8 s timeout, schema-checked
+                                                  ▼
+                                    reconcile: waiting car × due orders without check-in
+                                                  │
+                     needs review ─▶ matched ─▶ handed over   (or dismissed / closed by late check-in)
+                                                  │
+                                         metrics + activity log
 ```
 
----
+Built on Amazon's [ring-api-helloworld](https://github.com/AmazonAppDev/ring-api-helloworld) sample (MIT). The original sample dashboard is still available at `/sample`.
 
-## Video Processors
+## Built during the hackathon
 
-Built-in processors (available in refresh token mode):
-
-| Processor | Description |
-|-----------|-------------|
-| 🎯 Catch the Logo | Hand-tracking game with fire effects |
-| 🌡️ Motion Heatmap | Visualizes motion as color overlay |
-| 💡 Brightness Analyzer | Analyzes frame brightness levels |
-
-### Creating Custom Processors
-
-```typescript
-import {VideoProcessor, ProcessorResult} from './types';
-import {processorRegistry} from './registry';
-
-class MyProcessor implements VideoProcessor {
-  id = 'my-processor';
-  name = 'My Processor';
-  description = 'Does something cool';
-  enabled = false;
-
-  async process(
-    frame: ImageData,
-    canvas: HTMLCanvasElement,
-    video: HTMLVideoElement,
-  ): Promise<ProcessorResult | null> {
-    return {
-      id: `my-${Date.now()}`,
-      processorId: this.id,
-      timestamp: Date.now(),
-      data: {},
-      boundingBoxes: [{x: 0, y: 0, width: 100, height: 100, label: 'Detected'}],
-    };
-  }
-}
-
-processorRegistry.register(new MyProcessor());
-```
-
-See [docs/video-processors.md](docs/video-processors.md) for the complete guide.
-
----
-
-## Webhook Integration
-
-Available in refresh token mode. The dashboard receives webhook events via POST and broadcasts them to connected clients via SSE.
-
-```bash
-# Send a test event
-curl -X POST http://localhost:3000/api/webhook \
-  -H "Content-Type: application/json" \
-  -d '{"event_type": "motion_detected", "device_id": "camera-1"}'
-```
-
-Configure your Ring webhook to POST to `/api/webhook`. Set `RING_WEBHOOK_SECRET` in `.env.local` for authentication.
-
----
-
-## API Reference
-
-For full API documentation:
-- [Ring Partner API Documentation](https://developer.amazon.com/docs/ring/api-documentation.html)
-- [Live Video Streaming (WHEP)](https://developer.amazon.com/docs/ring/live-video.html)
-- [Device Discovery](https://developer.amazon.com/docs/ring/device-discovery.html)
-- [Authentication Guide](https://developer.amazon.com/docs/ring/authentication.html)
-
----
-
-## Tech Stack
-
-- **Scripts**: Python 3.8+ with `requests`
-- **Web App**: Next.js 14 (App Router), TypeScript, Tailwind CSS
-- **Video**: WebRTC (WHEP protocol), MediaPipe Hands
-- **Validation**: Zod
-- **Events**: Server-Sent Events (SSE)
-
----
-
-## Development
-
-```bash
-# Run web app with hot reload
-npm run dev
-
-# Type checking
-npx tsc --noEmit
-
-# Build for production
-npm run build
-```
-
----
+Everything under `lib/arrivalops/`, `app/components/desk/`, `app/hooks/useArrivalOps.ts`, `app/hooks/useFrameSampler.ts`, `app/api/arrivalops/` and the new `app/page.tsx` was written for Build, Ship, Shape (October 2026). Amazon's sample provided the Ring authentication, device discovery and WHEP streaming code.
 
 ## License
 
-[MIT](LICENSE)
+MIT. See [LICENSE](LICENSE).
