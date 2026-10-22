@@ -284,10 +284,10 @@ export default function Desk() {
       <footer className="flex-none truncate px-4 pb-2 pt-1.5 text-[11px] text-slate-400" title="Licence plates and faces are never read.">
         Orders and check-ins are simulated demo data.{' '}
         {live
-          ? `Each changed frame of the Ring video is checked on Amazon Bedrock (${view.mode?.visionModel}).`
-          : view.mode?.replayAnswersRecorded
-            ? `Replay shows real Ring Playground frames with the answers Amazon Bedrock (${view.mode?.visionModel}) gave for them.`
-            : 'Replay shows real Ring Playground frames in a staged order; its vehicle answers are scripted, not live model output.'}{' '}
+          ? `The Ring video is checked in this browser by an on-device vehicle detector (COCO-SSD)${
+              view.mode?.bedrock.state === 'active' ? `, with Amazon Bedrock (${view.mode.bedrockModel}) as a second opinion` : ''
+            }.`
+          : 'Replay shows real Ring Playground frames in a staged order, with the answers the on-device vehicle detector (COCO-SSD) gave for them.'}{' '}
         Licence plates and faces are never read.
       </footer>
 

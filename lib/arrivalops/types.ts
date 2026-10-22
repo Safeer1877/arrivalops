@@ -27,6 +27,7 @@ export interface VisionResult {
   model: string
   latencyMs: number
   error?: string
+  box?: Zone // where the vehicle is, as fractions of the frame, when the model gives one
 }
 
 export interface Observation {

@@ -14,6 +14,22 @@ import { ZoneLayer } from './ZoneLayer'
 // Same crop as the replay frames (1216×684 of 1280×720), as fractions so any stream size works.
 const LIVE_CROP = { x: 44 / 1280, y: 0, w: 1216 / 1280, h: 684 / 720 }
 
+/** The vehicle the detector picked out in the bay, outlined on the picture so staff can see what it saw. */
+function VehicleBox({ v }: { v?: VisionResult }) {
+  if (!v?.box || v.vehiclePresent === false) return null
+  const b = v.box
+  return (
+    <div
+      className="pointer-events-none absolute rounded-sm border-2 border-emerald-400"
+      style={{ left: `${b.x * 100}%`, top: `${b.y * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%` }}
+    >
+      <span className="absolute -bottom-5 left-0 whitespace-nowrap rounded-sm bg-emerald-400 px-1 text-[10px] font-semibold text-emerald-950">
+        {[v.colour, v.vehicleType].filter(Boolean).join(' ') || 'vehicle'} {Math.round(v.confidence * 100)}%
+      </span>
+    </div>
+  )
+}
+
 /** One line under the picture: what the camera last saw in the bay, and which model said so. */
 function VisionStatus({
   v,
@@ -78,7 +94,7 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
   const [device, setDevice] = useState<{ id: string; name: string } | null>(null)
   const [deviceError, setDeviceError] = useState<string | null>(null)
   const { streamActive, streamError, startStream, stopStream } = useWebRTCStream({ videoRef, deviceId: device?.id })
-  const { last, checking, stalled, region } = useFrameSampler({
+  const { last, checking, stalled, region, detector } = useFrameSampler({
     videoRef,
     enabled: live && streamActive,
     deviceId: device?.id,
@@ -212,6 +228,7 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
             )}
           </>
         )}
+        <VehicleBox v={live ? last?.vision : latest?.source === 'replay' ? latest.vision : undefined} />
         <ZoneLayer
           zone={settings.zone}
           editing={editingZone}
@@ -227,7 +244,15 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
           v={last?.vision}
           checking={checking}
           source="Ring live"
-          idle={streamActive ? 'Watching. Frames are only sent when the bay changes.' : 'Camera not started'}
+          idle={
+            !streamActive
+              ? 'Camera not started'
+              : detector === 'loading'
+                ? 'Loading the vehicle detector…'
+                : detector === 'failed'
+                  ? 'The vehicle detector can’t run in this browser.'
+                  : 'Watching the bay.'
+          }
           stalled={streamActive && stalled}
           region={region}
         />

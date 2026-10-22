@@ -92,3 +92,40 @@ export async function classifyFrame(jpeg: Uint8Array): Promise<VisionResult> {
     clearTimeout(timer)
   }
 }
+
+// Bedrock is the optional second opinion on top of the on-device detector. It is tried when AWS credentials are
+// configured (or VISION_PROVIDER=bedrock), never when VISION_PROVIDER=on-device. When it fails the desk carries on
+// with the detector's answer and rests Bedrock for a while, so a restricted account doesn't add an error per frame.
+const REST_AFTER_REFUSAL_MS = 10 * 60_000
+const REST_AFTER_FAILURE_MS = 60_000
+let bedrockRestingUntil = 0
+let bedrockError: string | undefined
+
+export function bedrockConfigured(): boolean {
+  const choice = process.env.VISION_PROVIDER
+  if (choice === 'on-device') return false
+  return choice === 'bedrock' || Boolean(process.env.AWS_ACCESS_KEY_ID || process.env.AWS_PROFILE)
+}
+
+export type BedrockState = { state: 'off' } | { state: 'active' } | { state: 'unavailable'; error: string }
+
+export function bedrockState(): BedrockState {
+  if (!bedrockConfigured()) return { state: 'off' }
+  return bedrockError ? { state: 'unavailable', error: bedrockError } : { state: 'active' }
+}
+
+/** The answer for a live frame: Bedrock's when it works, otherwise what the detector in the browser found. */
+export async function classifyLive(jpeg: Uint8Array, onDevice?: VisionResult, now = Date.now()): Promise<VisionResult> {
+  if (!onDevice) return classifyFrame(jpeg)
+  if (!bedrockConfigured() || now < bedrockRestingUntil) return onDevice
+  const b = await classifyFrame(jpeg)
+  if (b.error) {
+    bedrockError = b.error
+    const refused = /not allowed|no access|denied|not authori[sz]ed|credential|security token/i.test(b.error)
+    bedrockRestingUntil = now + (refused ? REST_AFTER_REFUSAL_MS : REST_AFTER_FAILURE_MS)
+    return onDevice
+  }
+  bedrockError = undefined
+  // Bedrock sees one still, so whether the car moved comes from the detector, which compares looks.
+  return { ...b, stopped: b.stopped === 'unclear' ? onDevice.stopped : b.stopped, box: onDevice.box }
+}

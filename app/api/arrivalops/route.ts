@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { boardFor, isLive, rememberBoard } from '@/lib/arrivalops/board'
 import { ActionError } from '@/lib/arrivalops/reconcile'
-import { DEFAULT_STEPS } from '@/lib/arrivalops/replay'
+import { DETECTOR_MODEL } from '@/lib/arrivalops/detector'
 import { ctxNow, dispatch, getState, view } from '@/lib/arrivalops/store'
-import { MODEL_ID } from '@/lib/arrivalops/vision'
+import { bedrockState, MODEL_ID } from '@/lib/arrivalops/vision'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +13,9 @@ export function GET(request: NextRequest) {
     ...view(getState(board.boardId)),
     mode: {
       live: isLive(),
-      visionModel: MODEL_ID,
-      replayAnswersRecorded: DEFAULT_STEPS.every((s) => s.recorded),
+      detectorModel: DETECTOR_MODEL,
+      bedrockModel: MODEL_ID,
+      bedrock: bedrockState(),
     },
   })
   return rememberBoard(res, board)

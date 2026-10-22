@@ -113,8 +113,7 @@ export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, a
           <p className="text-xs text-slate-500">
             Waiting <span className={`font-semibold tabular-nums ${urgent ? 'text-amber-700' : 'text-slate-900'}`}>{clock(waiting)}</span>
             {c.chimeAnnouncedAt && ' · called out on the tablet'}
-            {/* A scripted replay answer has no real confidence, so none is shown. */}
-            {obs && obs.vision.model !== 'scripted answer' && ` · ${Math.round(obs.vision.confidence * 100)}% sure`}
+            {obs && ` · ${Math.round(obs.vision.confidence * 100)}% sure`}
           </p>
         </div>
       </div>

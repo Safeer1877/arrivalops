@@ -14,7 +14,12 @@ export interface DeskView {
   settings: DeskSettings
   canUndo: string | null
   now: string
-  mode?: { live: boolean; visionModel: string; replayAnswersRecorded: boolean }
+  mode?: {
+    live: boolean
+    detectorModel: string
+    bedrockModel: string
+    bedrock: { state: 'off' } | { state: 'active' } | { state: 'unavailable'; error: string }
+  }
 }
 
 const POLL_MS = 2000

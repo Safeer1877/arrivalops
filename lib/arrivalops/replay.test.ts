@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { answerFor, DEFAULT_STEPS, DRIVE_OFF, REPLAY_DEVICE } from './replay'
+import { DEMO_SETTINGS } from './seed'
 import { dispatch, getState, recordObservation, restartReplay, view } from './store'
 
 describe('replay recording', () => {
@@ -18,7 +19,7 @@ describe('replay recording', () => {
     for (const s of DEFAULT_STEPS.slice(0, upTo)) {
       last = recordObservation(
         { ...REPLAY_DEVICE, source: 'replay', frame: s.frame },
-        { latencyMs: 0, model: 'recorded', ...s.vision },
+        answerFor(s, DEMO_SETTINGS.zone),
         ctx(s.delayMs),
         'replay-test',
       )
@@ -43,7 +44,7 @@ describe('replay recording', () => {
     play(DEFAULT_STEPS.length)
     const view = recordObservation(
       { ...REPLAY_DEVICE, source: 'replay', frame: DRIVE_OFF.frame },
-      { latencyMs: 0, model: 'recorded', ...DRIVE_OFF.vision },
+      answerFor(DRIVE_OFF, DEMO_SETTINGS.zone),
       { now: new Date(Date.now() + 120_000), id: (p) => `${p}_leave` },
       'replay-test',
     ).view
@@ -65,6 +66,16 @@ describe('replay recording', () => {
     expect(answerFor(car, { x: 0.55, y: 0.49, w: 0.44, h: 0.38 }).vehiclePresent).toBe(true)
     expect(answerFor(car, { x: 0.1, y: 0.4, w: 0.3, h: 0.3 }).vehiclePresent).toBe(false)
     expect(answerFor(car, null).vehiclePresent).toBe(true)
+  })
+
+  it('answers from what the detector really found on each frame', () => {
+    const car = answerFor(DEFAULT_STEPS[1], DEMO_SETTINGS.zone)
+    expect(car).toMatchObject({ vehiclePresent: true, stopped: true, colour: 'grey', vehicleType: 'car' })
+    expect(car.model).toMatch(/COCO-SSD.*recorded/)
+    expect(car.confidence).toBeGreaterThan(0.6)
+    // The cars parked at the back of the lot are seen, but they are outside the pickup bay.
+    expect(answerFor(DEFAULT_STEPS[0], DEMO_SETTINGS.zone).vehiclePresent).toBe(false)
+    expect(answerFor(DEFAULT_STEPS[0], null).vehiclePresent).not.toBe(false)
   })
 
   it('keeps the bay the visitor saved when the replay starts again', () => {

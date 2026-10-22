@@ -8,8 +8,8 @@ const ROWS: Array<[string, string]> = [
     'Orders, customers and “I’m here” app check-ins (no POS is connected in this build)',
   ],
   [
-    'Amazon Bedrock (Nova Lite) answering on frames from that video',
-    'Replay mode: real frames from the Playground’s Vehicle stream, played in a staged order because the clip never shows a car pulling in and waiting. The stamps on the picture are Ring’s own: when the clip was filmed (2023) and when the Playground streamed it to us (2026). Until recorded Bedrock answers are added, the vehicle answers in replay are scripted.',
+    'A vehicle detector (COCO-SSD) running in this browser on frames from that video, with Amazon Bedrock (Nova Lite) as a second opinion when the AWS account allows it. Replay shows the answers the same detector gave on its frames.',
+    'Replay mode: real frames from the Playground’s Vehicle stream, played in a staged order because the clip never shows a car pulling in and waiting. The stamps on the picture are Ring’s own: when the clip was filmed (2023) and when the Playground streamed it to us (2026).',
   ],
   ['Reconciliation, metrics, undo and this desk', 'The spoken call-out plays on this device, not on a Ring Chime'],
 ]
