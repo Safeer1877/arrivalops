@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { candidateReasons } from '@/lib/arrivalops/reconcile'
 import type { ActionInput } from '@/lib/arrivalops/store'
 import type { Observation, Order, ReviewCase } from '@/lib/arrivalops/types'
@@ -24,6 +25,9 @@ function vehicleLabel(o?: Observation) {
 }
 
 export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, act }: Props) {
+  const ref = useRef<HTMLElement>(null)
+  // A new alert scrolls into view if staff had scrolled away; 'nearest' leaves the page alone when it's already visible.
+  useEffect(() => ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), [c.id])
   const obs = observations.find((o) => o.id === c.observationIds[0])
   const waiting = (now - new Date(c.firstSeenAt ?? c.openedAt).getTime()) / 1000
   const alerted = (now - new Date(c.openedAt).getTime()) / 1000
@@ -32,7 +36,10 @@ export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, a
 
   if (c.status === 'matched' && matched) {
     return (
-      <article className="rounded-2xl border-2 border-emerald-500 bg-white p-5 shadow-sm motion-safe:animate-case-in">
+      <article
+        ref={ref}
+        className="scroll-mt-24 rounded-2xl border-2 border-emerald-500 bg-white p-5 shadow-sm motion-safe:animate-case-in"
+      >
         <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Matched · bring it out</p>
         <div className="mt-2 flex items-baseline justify-between gap-4">
           <h3 className="text-2xl font-bold text-slate-900">
@@ -59,7 +66,8 @@ export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, a
 
   return (
     <article
-      className={`rounded-2xl border-2 bg-white p-5 shadow-sm transition motion-safe:animate-case-in ${urgent ? 'border-amber-500 ring-4 ring-amber-200' : 'border-amber-300'}`}
+      ref={ref}
+      className={`scroll-mt-24 rounded-2xl border-2 bg-white p-5 shadow-sm transition motion-safe:animate-case-in ${urgent ? 'border-amber-500 ring-4 ring-amber-200' : 'border-amber-300'}`}
     >
       <div className="flex flex-col gap-4 sm:flex-row">
         {obs?.frame ? (
