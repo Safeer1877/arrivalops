@@ -213,6 +213,11 @@ export function observe(state: State, obs: Observation, ctx: Ctx): ReviewCase | 
   if (!open && sameVisitHandled(state, obs)) return null
 
   if (open) {
+    // The first look was unsure and this one is sure: say so, so the feed doesn't contradict the card.
+    const before = state.observations.find((o) => o.id === open.observationIds[0])
+    if (before?.vision.vehiclePresent === 'unclear' && obs.vision.vehiclePresent === true) {
+      log(state, ctx, { kind: 'observation', text: `${describeVehicle(obs)} confirmed in the bay` })
+    }
     open.observationIds.unshift(obs.id)
     if (candidates.length) open.candidateOrderIds = candidates
     promote(state, ctx)

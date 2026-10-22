@@ -107,6 +107,12 @@ describe('observe', () => {
     expect(state.activity.some((a) => a.kind === 'vision_error')).toBe(true)
   })
 
+  it('logs when an unsure sighting is confirmed as a vehicle', () => {
+    observe(state, obs(1, { vehiclePresent: 'unclear', colour: undefined }), ctx(1))
+    observe(state, obs(2), ctx(2))
+    expect(state.activity[0].text).toBe('Silver hatchback confirmed in the bay')
+  })
+
   it('counts a repeated camera error on one line and says Bedrock is not enabled', () => {
     const failed = { vehiclePresent: 'unclear' as const, stopped: 'unclear' as const, error: 'Operation not allowed' }
     for (const m of [1, 2, 3]) observe(state, obs(m, failed), ctx(m))
