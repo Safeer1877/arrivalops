@@ -140,7 +140,7 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
           )}
         </span>
       </header>
-      <div className="relative aspect-video overflow-hidden bg-slate-900">
+      <div className="relative aspect-video select-none overflow-clip bg-slate-900">
         {live ? (
           <>
             <video

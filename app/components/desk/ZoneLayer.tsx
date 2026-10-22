@@ -45,6 +45,8 @@ export function ZoneLayer({ zone, editing, onSave, onCancel }: Props) {
         className={`absolute inset-0 ${editing ? 'cursor-crosshair touch-none bg-black/25' : 'pointer-events-none'}`}
         onPointerDown={(e) => {
           if (!editing) return
+          // No text selection: dragging one would scroll the clipped picture and shift the video under the bay.
+          e.preventDefault()
           e.currentTarget.setPointerCapture(e.pointerId)
           const p = point(e)
           setStart(p)
