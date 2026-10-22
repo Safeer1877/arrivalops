@@ -4,8 +4,11 @@
 
 body {
   color: #0f172a;
-  background: #f5f5f4;
+  background: #f1f5f9;
 }
+
+/* Quiet scrollbars for the console's inner panels */
+.panel-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
 
 /* Thin scrollbars for the original sample dashboard at /sample, which is dark */
 .dark ::-webkit-scrollbar { width: 6px; }

@@ -18,20 +18,15 @@ const DOT: Record<ActivityEntry['kind'], string> = {
 
 export function Activity({ entries }: { entries: ActivityEntry[] }) {
   return (
-    <section aria-labelledby="activity-h">
-      <h2 id="activity-h" className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-        Activity
-      </h2>
-      <ol className="mt-2 space-y-2">
-        {entries.slice(0, 12).map((e) => (
-          <li key={e.id} className="flex items-start gap-3 text-sm">
-            <span className={`mt-1.5 h-2 w-2 flex-none rounded-full ${DOT[e.kind]}`} aria-hidden />
-            <span className="w-20 flex-none whitespace-nowrap tabular-nums text-slate-400">{time(e.at)}</span>
-            <span className="text-slate-700">{e.text}</span>
-          </li>
-        ))}
-        {!entries.length && <li className="text-sm text-slate-400">Nothing yet today.</li>}
-      </ol>
-    </section>
+    <ol className="divide-y divide-slate-100">
+      {entries.map((e) => (
+        <li key={e.id} className="flex items-baseline gap-3 px-4 py-1.5 text-[13px]">
+          <span className={`h-1.5 w-1.5 flex-none -translate-y-0.5 rounded-full ${DOT[e.kind]}`} aria-hidden />
+          <span className="w-16 flex-none whitespace-nowrap tabular-nums text-slate-400">{time(e.at)}</span>
+          <span className="min-w-0 text-slate-700">{e.text}</span>
+        </li>
+      ))}
+      {!entries.length && <li className="px-4 py-3 text-[13px] text-slate-400">Nothing yet today.</li>}
+    </ol>
   )
 }

@@ -96,6 +96,8 @@ const Action = z.discriminatedUnion('action', [
       .optional(),
     dwellSeconds: z.number().int().min(0).max(600).optional(),
     calloutSeconds: z.number().int().min(5).max(600).optional(),
+    // restoring the bay this browser saved earlier, e.g. after a server restart: no undo step, no log line
+    quiet: z.boolean().optional(),
   }),
   z.object({ action: z.literal('reset') }),
 ])
@@ -123,8 +125,9 @@ export function dispatch(input: unknown, ctx = ctxNow(), boardId = SHOP_BOARD) {
       undo(state, ctx)
       break
     case 'settings': {
-      const { action: _a, ...patch } = a
-      updateSettings(state, patch, ctx)
+      const { action: _a, quiet, ...patch } = a
+      if (quiet) state.settings = { ...settingsOf(state), ...patch }
+      else updateSettings(state, patch, ctx)
       break
     }
     case 'reset': {

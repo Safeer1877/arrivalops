@@ -3,7 +3,7 @@
 // clip never shows a car pulling in and waiting, so the order and timing of these frames are staged; the
 // desk says so. It lets judges and visitors try ArrivalOps without a Ring token.
 
-import type { VisionResult } from './types'
+import type { VisionResult, Zone } from './types'
 
 export interface ReplayStep {
   delayMs: number // after the previous step
@@ -16,6 +16,10 @@ export interface ReplayStep {
 }
 
 export const REPLAY_DEVICE = { deviceId: 'replay.playground.vehicle', deviceName: 'Pickup bays (Ring Playground replay)' }
+
+// Where the grey hatchback sits in lot-car-in-bay.jpg, as fractions of the frame. Used to answer for the bay
+// the visitor marked: a bay drawn somewhere else on the picture really does see an empty bay.
+export const CAR_BOX: Zone = { x: 0.75, y: 0.54, w: 0.22, h: 0.25 }
 
 const CAR_IN_BAY = { vehiclePresent: true, stopped: true, colour: 'grey', vehicleType: 'hatchback', confidence: 0.9 } as const
 const CLEAR = { vehiclePresent: false, stopped: 'unclear', confidence: 0.9 } as const
@@ -41,3 +45,12 @@ export const DEFAULT_STEPS: ReplayStep[] = [
 
 /** Demo control: the driver gives up and leaves, to show what a missed pickup looks like. */
 export const DRIVE_OFF: ReplayStep = step(0, 'clear', 'Nobody came out, so the driver left')
+
+/** The step's answer as seen through the marked bay: a car whose centre is outside the bay isn't in it. */
+export function answerFor(s: ReplayStep, zone: Zone | null): ReplayStep['vision'] {
+  if (!zone || s.vision.vehiclePresent !== true) return s.vision
+  const cx = CAR_BOX.x + CAR_BOX.w / 2
+  const cy = CAR_BOX.y + CAR_BOX.h / 2
+  const inside = cx >= zone.x && cx <= zone.x + zone.w && cy >= zone.y && cy <= zone.y + zone.h
+  return inside ? s.vision : CLEAR
+}

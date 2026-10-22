@@ -112,6 +112,19 @@ function activeCase(state: State, obs: Observation, now: Date): ReviewCase | und
   )
 }
 
+function sameVisitHandled(state: State, obs: Observation): boolean {
+  const lastClear = state.observations.find(
+    (o) => o.id !== obs.id && o.deviceId === obs.deviceId && o.vision.vehiclePresent === false && !o.vision.error,
+  )
+  const since = lastClear ? ms(lastClear.at) : 0
+  return state.cases.some(
+    (c) =>
+      !OPEN.includes(c.status) &&
+      ms(c.firstSeenAt) >= since &&
+      c.observationIds.some((id) => state.observations.find((o) => o.id === id)?.deviceId === obs.deviceId),
+  )
+}
+
 /** Alert staff about cars that have now been stopped in the bay for the dwell time. */
 export function promote(state: State, ctx: Ctx): ReviewCase[] {
   const { dwellSeconds } = settingsOf(state)
@@ -183,6 +196,10 @@ export function observe(state: State, obs: Observation, ctx: Ctx): ReviewCase | 
   }
 
   const candidates = rankCandidates(state.orders, obs, ctx.now)
+
+  // One case per visit: once staff have dealt with this car, more frames of it sitting there change nothing
+  // until the bay has been seen clear again.
+  if (!open && sameVisitHandled(state, obs)) return null
 
   if (open) {
     open.observationIds.unshift(obs.id)

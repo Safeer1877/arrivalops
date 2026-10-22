@@ -141,6 +141,15 @@ describe('dwell and departures', () => {
     expect(state.activity.slice(0, state.activity.length - before).map((a) => a.kind)).toEqual(['left', 'case_opened', 'observation'])
   })
 
+  it('opens one case per visit, even if the handed-over car is still in the bay', () => {
+    const c = observe(state, seen(0), sec(0))!
+    promote(state, sec(61))
+    state.cases[0].status = 'handed_over'
+    expect(observe(state, seen(70), sec(70))).toBeNull()
+    observe(state, seen(80, { vehiclePresent: false }), sec(80))
+    expect(observe(state, seen(200), sec(200))?.id).not.toBe(c.id)
+  })
+
   it('treats a car that leaves before the alert as ordinary traffic', () => {
     const c = observe(state, seen(0), sec(0))!
     observe(state, seen(20, { vehiclePresent: false }), sec(20))

@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_STEPS, DRIVE_OFF, REPLAY_DEVICE } from './replay'
+import { answerFor, DEFAULT_STEPS, DRIVE_OFF, REPLAY_DEVICE } from './replay'
 import { dispatch, getState, recordObservation, restartReplay, view } from './store'
 
 describe('replay recording', () => {
@@ -58,5 +58,19 @@ describe('replay recording', () => {
     expect(v.orders.find((o) => o.vehicleHint === 'grey hatchback')?.checkIn).toBeUndefined()
     expect(v.cases.filter((c) => c.status === 'needs_review' || c.status === 'watching')).toHaveLength(0)
     expect(v.metrics.missedToday).toBe(0)
+  })
+
+  it('only sees the car when the marked bay covers it', () => {
+    const car = DEFAULT_STEPS[1]
+    expect(answerFor(car, { x: 0.55, y: 0.49, w: 0.44, h: 0.38 }).vehiclePresent).toBe(true)
+    expect(answerFor(car, { x: 0.1, y: 0.4, w: 0.3, h: 0.3 }).vehiclePresent).toBe(false)
+    expect(answerFor(car, null).vehiclePresent).toBe(true)
+  })
+
+  it('keeps the bay the visitor saved when the replay starts again', () => {
+    const zone = { x: 0.1, y: 0.2, w: 0.3, h: 0.3 }
+    dispatch({ action: 'settings', zone }, undefined, 'replay-zone')
+    restartReplay(undefined, 'replay-zone')
+    expect(getState('replay-zone').settings?.zone).toEqual(zone)
   })
 })
