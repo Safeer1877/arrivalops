@@ -11,7 +11,7 @@ import { MissedCard } from './components/desk/MissedCard'
 import { PickupQueue } from './components/desk/PickupQueue'
 import { StatStrip } from './components/desk/StatStrip'
 import { WatchingCard } from './components/desk/WatchingCard'
-import { announce, useArrivalOps } from './hooks/useArrivalOps'
+import { announce, unlockAudio, useArrivalOps } from './hooks/useArrivalOps'
 import type { Order, Zone } from '@/lib/arrivalops/types'
 
 const SHOP = process.env.NEXT_PUBLIC_SHOP_NAME || 'Corner Kitchen'
@@ -141,7 +141,10 @@ export default function Desk() {
             onClick={() => {
               const next = !soundOn
               setSoundOn(next)
-              if (next) announce('Call-outs on. I’ll say when a car is waiting with no check-in.')
+              if (next) {
+                unlockAudio()
+                announce('Call-outs on. I’ll say when a car is waiting with no check-in.')
+              }
             }}
             aria-pressed={soundOn}
             className={`h-8 rounded-md px-2.5 text-[13px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${

@@ -65,10 +65,13 @@ export function useArrivalOps({ soundOn }: { soundOn: boolean }) {
       await refresh()
       const res = await fetch(`/api/arrivalops/tick${soundRef.current ? '?speak=1' : ''}`, { method: 'POST' }).catch(() => null)
       const data = res?.ok ? await res.json() : null
-      if (data?.announce?.length) announce()
+      if (data?.announce?.length) {
+        announce()
+        showNotice('Called out: a car is waiting in the bay with no check-in')
+      }
     }, POLL_MS)
     return () => clearInterval(t)
-  }, [refresh])
+  }, [refresh, showNotice])
 
   const act = useCallback(
     async (input: ActionInput) => {
@@ -139,22 +142,51 @@ export function useArrivalOps({ soundOn }: { soundOn: boolean }) {
 }
 
 /** Two-tone chime plus a spoken line, for a counter tablet that nobody is looking at. */
+let audio: AudioContext | null = null
+const speaking: SpeechSynthesisUtterance[] = [] // held until they finish: Chrome can drop an utterance it has garbage-collected
+
+/**
+ * Browsers only allow sound after the person has clicked something. Call this from the call-outs toggle so the
+ * audio context and speech engine are unlocked by that click, and later call-outs can play without one.
+ */
+export function unlockAudio() {
+  try {
+    audio ??= new AudioContext()
+    void audio.resume()
+    window.speechSynthesis?.resume()
+  } catch {
+    // no Web Audio: speech alone still works
+  }
+}
+
+/** Two-note chime, then the spoken call-out. Speech is queued, so overlapping call-outs play in turn. */
 export function announce(text = 'A car is waiting in the pickup bay with no check-in.') {
   try {
-    const ctx = new AudioContext()
-    ;[880, 660].forEach((f, i) => {
-      const o = ctx.createOscillator()
-      const g = ctx.createGain()
-      o.frequency.value = f
-      g.gain.setValueAtTime(0.0001, ctx.currentTime + i * 0.28)
-      g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + i * 0.28 + 0.02)
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.28 + 0.26)
-      o.connect(g).connect(ctx.destination)
-      o.start(ctx.currentTime + i * 0.28)
-      o.stop(ctx.currentTime + i * 0.28 + 0.3)
-    })
-    setTimeout(() => window.speechSynthesis?.speak(new SpeechSynthesisUtterance(text)), 650)
+    if (audio?.state === 'running') {
+      const t0 = audio.currentTime
+      ;[880, 660].forEach((f, i) => {
+        const o = audio!.createOscillator()
+        const g = audio!.createGain()
+        o.frequency.value = f
+        g.gain.setValueAtTime(0.0001, t0 + i * 0.28)
+        g.gain.exponentialRampToValueAtTime(0.25, t0 + i * 0.28 + 0.02)
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.28 + 0.26)
+        o.connect(g).connect(audio!.destination)
+        o.start(t0 + i * 0.28)
+        o.stop(t0 + i * 0.28 + 0.3)
+      })
+    }
   } catch {
-    // audio blocked until the user interacts; the on-screen card still shows
+    // chime is a nicety; the spoken line below is what matters
   }
+  const synth = window.speechSynthesis
+  if (!synth) return
+  const u = new SpeechSynthesisUtterance(text)
+  u.lang = 'en-US'
+  u.onend = u.onerror = () => speaking.splice(speaking.indexOf(u), 1)
+  speaking.push(u)
+  setTimeout(() => {
+    synth.resume() // Chrome on macOS can leave the queue paused after the tab was in the background
+    synth.speak(u)
+  }, 650)
 }
