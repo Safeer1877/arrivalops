@@ -1,10 +1,8 @@
-// Board state, kept in memory. The shop's own board (live mode) can be persisted to disk so a restart doesn't
-// lose it; the hosted replay demo gives every visitor a separate throwaway board so nobody sees anyone
-// else's clicks. Every change goes through `dispatch`, which validates input and returns the fresh view.
+// Board state, kept in memory. The shop's own board (live mode) can be persisted so a restart doesn't lose it;
+// the replay demo gives every visitor a separate throwaway board so nobody sees anyone else's clicks. Every
+// change goes through `dispatch`, which validates input and returns the fresh view. Nothing here is tied to
+// Node: the same code runs on the server (API routes) and in the browser (the hosted demo).
 
-import { randomUUID } from 'crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { join } from 'path'
 import { z } from 'zod'
 import { computeMetrics } from './metrics'
 import {
@@ -25,22 +23,23 @@ import {
 import { DEMO_SETTINGS, seedState } from './seed'
 import type { Observation, State, VisionResult } from './types'
 
-const DATA_FILE = process.env.ARRIVALOPS_DATA_DIR ? join(process.env.ARRIVALOPS_DATA_DIR, 'state.json') : null
-
 export const SHOP_BOARD = 'shop'
 const MAX_VISITOR_BOARDS = 500
 
 const g = globalThis as unknown as { __arrivalops?: Map<string, State> }
 
+/** Where a board outlives the process: a file for the shop on the server, localStorage in the browser. */
+export interface Persistence {
+  load(boardId: string): State | null
+  save(state: State, boardId: string): void
+}
+let persistence: Persistence | null = null
+export function setPersistence(p: Persistence) {
+  persistence = p
+}
+
 function load(boardId: string): State {
-  if (boardId === SHOP_BOARD && DATA_FILE && existsSync(DATA_FILE)) {
-    try {
-      return JSON.parse(readFileSync(DATA_FILE, 'utf8'))
-    } catch {
-      // fall through to a fresh board
-    }
-  }
-  return fresh(boardId)
+  return persistence?.load(boardId) ?? fresh(boardId)
 }
 
 const fresh = (boardId: string, now = new Date()) => seedState(now, boardId === SHOP_BOARD ? undefined : DEMO_SETTINGS)
@@ -59,14 +58,19 @@ export function getState(boardId = SHOP_BOARD): State {
 }
 
 function save(state: State, boardId: string) {
-  if (!DATA_FILE || boardId !== SHOP_BOARD) return
-  mkdirSync(join(DATA_FILE, '..'), { recursive: true })
+  persistence?.save(state, boardId)
+}
+
+/** What is worth keeping between visits: no undo step, and only the latest sightings. */
+export function persistable(state: State): State {
   const { undo: _u, ...rest } = state
-  writeFileSync(DATA_FILE, JSON.stringify({ ...rest, observations: rest.observations.slice(0, 20) }))
+  return { ...rest, observations: rest.observations.slice(0, 20) }
 }
 
 export function ctxNow(): Ctx {
-  return { now: new Date(), id: (p) => `${p}_${randomUUID().slice(0, 8)}` }
+  // randomUUID needs a secure context in browsers; an id only has to be unique on one board
+  const rand = () => globalThis.crypto?.randomUUID?.().slice(0, 8) ?? Math.random().toString(36).slice(2, 10)
+  return { now: new Date(), id: (p) => `${p}_${rand()}` }
 }
 
 export function view(state = getState(), now = new Date()) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { browserFetch } from '@/lib/arrivalops/browserApi'
 import type { Metrics } from '@/lib/arrivalops/metrics'
 import type { ActionInput } from '@/lib/arrivalops/store'
 import type { ActivityEntry, DeskSettings, Observation, Order, ReviewCase } from '@/lib/arrivalops/types'
@@ -23,6 +24,10 @@ export interface DeskView {
 }
 
 const POLL_MS = 2000
+
+// The hosted demo (set at build time, automatically on Vercel) runs the desk's API in the browser, so each
+// visitor has a private board and no server keeps state. Everywhere else the Next.js routes answer.
+const api = process.env.NEXT_PUBLIC_ARRIVALOPS_IN_BROWSER === '1' ? browserFetch : (path: string, init?: RequestInit) => fetch(path, init)
 
 export interface ReplayState {
   running: boolean
@@ -48,7 +53,7 @@ export function useArrivalOps({ soundOn }: { soundOn: boolean }) {
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch('/api/arrivalops', { cache: 'no-store' })
+      const res = await api('/api/arrivalops', { cache: 'no-store' })
       if (!res.ok) throw new Error(`Server returned ${res.status}`)
       setView(await res.json())
       setOffline(false)
@@ -68,7 +73,7 @@ export function useArrivalOps({ soundOn }: { soundOn: boolean }) {
     refresh()
     const t = setInterval(async () => {
       await refresh()
-      const res = await fetch(`/api/arrivalops/tick${soundRef.current ? '?speak=1' : ''}`, { method: 'POST' }).catch(() => null)
+      const res = await api(`/api/arrivalops/tick${soundRef.current ? '?speak=1' : ''}`, { method: 'POST' }).catch(() => null)
       const data = res?.ok ? await res.json() : null
       if (data?.announce?.length) {
         announce()
@@ -82,7 +87,7 @@ export function useArrivalOps({ soundOn }: { soundOn: boolean }) {
     async (input: ActionInput) => {
       setBusy(true)
       try {
-        const res = await fetch('/api/arrivalops', {
+        const res = await api('/api/arrivalops', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(input),
@@ -108,7 +113,7 @@ export function useArrivalOps({ soundOn }: { soundOn: boolean }) {
     stopReplay()
     setReplay((r) => ({ ...r, running: true, note: 'Starting', step: 0, played: true }))
     const run = async (step: number) => {
-      const res = await fetch('/api/arrivalops/replay', {
+      const res = await api('/api/arrivalops/replay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ step }),
@@ -132,7 +137,7 @@ export function useArrivalOps({ soundOn }: { soundOn: boolean }) {
   /** Demo control: the driver in the bay gives up and drives off. */
   const driveOff = useCallback(async () => {
     stopReplay()
-    const res = await fetch('/api/arrivalops/replay', {
+    const res = await api('/api/arrivalops/replay', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ step: 'leave' }),

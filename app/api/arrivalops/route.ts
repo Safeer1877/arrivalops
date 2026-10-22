@@ -1,33 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBoard, postAction } from '@/lib/arrivalops/api'
 import { boardFor, isLive, rememberBoard } from '@/lib/arrivalops/board'
-import { ActionError } from '@/lib/arrivalops/reconcile'
-import { DETECTOR_MODEL } from '@/lib/arrivalops/detector'
-import { ctxNow, dispatch, getState, view } from '@/lib/arrivalops/store'
+import '@/lib/arrivalops/diskPersistence'
 import { bedrockState, MODEL_ID } from '@/lib/arrivalops/vision'
 
 export const dynamic = 'force-dynamic'
 
 export function GET(request: NextRequest) {
   const board = boardFor(request)
-  const res = NextResponse.json({
-    ...view(getState(board.boardId)),
-    mode: {
-      live: isLive(),
-      detectorModel: DETECTOR_MODEL,
-      bedrockModel: MODEL_ID,
-      bedrock: bedrockState(),
-    },
-  })
-  return rememberBoard(res, board)
+  const { status, body } = getBoard(board.boardId, { live: isLive(), bedrockModel: MODEL_ID, bedrock: bedrockState() })
+  return rememberBoard(NextResponse.json(body, { status }), board)
 }
 
 export async function POST(request: NextRequest) {
   const board = boardFor(request)
-  try {
-    return rememberBoard(NextResponse.json(dispatch(await request.json(), ctxNow(), board.boardId)), board)
-  } catch (err) {
-    if (err instanceof ActionError) return NextResponse.json({ error: err.message }, { status: err.status })
-    console.error('ArrivalOps action failed:', err)
-    return NextResponse.json({ error: 'Something went wrong; nothing was changed.' }, { status: 500 })
-  }
+  const { status, body } = postAction(board.boardId, await request.json().catch(() => null))
+  return rememberBoard(NextResponse.json(body, { status }), board)
 }

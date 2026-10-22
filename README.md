@@ -27,7 +27,7 @@ Every staff action can be undone, settings (bay, dwell, call-out delay) are per 
 
 ## Try it
 
-**Hosted demo (no account needed):** _link added at submission_. It opens in **Replay** mode: real frames from the Ring Developer Playground *Vehicle* stream played in a staged order (the Playground clip has no car that arrives and waits). Its vehicle answers are the real output of the same on-device detector, recorded on those frames by `scripts/record-detections.ts`. Press **Play recorded arrival**. The driver waits until you match them to their order. To see a missed pickup instead, press **Driver gives up and leaves** in Demo controls. Each visitor gets their own board, and the **Demo controls** panel stands in for the ordering system (a customer tapping "I'm here", restarting the lunch rush). Demo timings are shortened (6 s dwell, 20 s call-out) and say so on screen.
+**Hosted demo (no account needed):** _link added at submission_. It opens in **Replay** mode: real frames from the Ring Developer Playground *Vehicle* stream played in a staged order (the Playground clip has no car that arrives and waits). Its vehicle answers are the real output of the same on-device detector, recorded on those frames by `scripts/record-detections.ts`. Press **Play recorded arrival**. The driver waits until you match them to their order. To see a missed pickup instead, press **Driver gives up and leaves** in Demo controls. Each visitor gets their own private board, kept in their own browser (the hosted demo runs the desk's API in the page, so no server holds anyone's clicks), and the **Demo controls** panel stands in for the ordering system (a customer tapping "I'm here", restarting the lunch rush). Demo timings are shortened (6 s dwell, 20 s call-out) and say so on screen.
 
 **Run it yourself:**
 
@@ -45,6 +45,7 @@ npm test                       # reconciliation, vision parsing and API tests
 | `VISION_PROVIDER` | `on-device` to never call Bedrock. Unset: Bedrock is tried with the usual AWS credential chain, and the detector's answer is used whenever Bedrock refuses or is unreachable (Bedrock then rests for 10 minutes). |
 | `BEDROCK_MODEL_ID` | Defaults to `us.amazon.nova-lite-v1:0`. |
 | `ARRIVALOPS_DATA_DIR` | Optional folder to persist the board across restarts. |
+| `NEXT_PUBLIC_ARRIVALOPS_IN_BROWSER` | `1` runs the replay demo entirely in the visitor's browser (set automatically on Vercel). Live Ring mode needs the server, so leave it unset there. |
 | `NEXT_PUBLIC_SHOP_NAME`, `NEXT_PUBLIC_CURRENCY` | Branding for the desk. |
 
 ## What's real and what's simulated

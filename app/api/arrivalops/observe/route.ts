@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import '@/lib/arrivalops/diskPersistence'
 import { recordObservation } from '@/lib/arrivalops/store'
 import { classifyLive } from '@/lib/arrivalops/vision'
 
