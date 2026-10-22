@@ -1,8 +1,8 @@
 # ArrivalOps
 
-**See the customer who never checked in.** Ring-powered curbside rescue for small businesses.
+**Ring-powered pickup exception management.** ArrivalOps catches the pickups your ordering system can't see, starting with its headline flow, **Unclaimed Pickup Rescue**: the customer who is waiting outside but never checked in.
 
-A takeaway has three orders ready. A car pulls into the pickup bay, but the driver never taps "I'm here". Staff are busy, the food goes cold, and the customer phones in, annoyed, or drives off. Ordering systems like Toast and Square only know about customers who check in. **ArrivalOps covers the ones who don't**: the shop's Ring camera notices a car waiting in the bay, ArrivalOps checks it against the ready orders that have no check-in, and staff get one clear card. They ask the driver's name, tap the order, hand it over, and the arrival-to-handover time is recorded.
+A takeaway has three orders ready. A car pulls into the pickup bay, but the driver never taps "I'm here". Staff are busy, the food goes cold, and the customer phones in, annoyed, or drives off. Ordering systems like Toast and Square only know about customers who check in. **ArrivalOps handles the exception**: the shop's Ring camera notices a car waiting in the bay, ArrivalOps checks it against the ready orders that have no check-in, and staff get one clear card. They ask the driver's name, tap the order, hand it over, and the arrival-to-handover time is recorded.
 
 ![Pickup desk with a car waiting and no check-in](docs/screenshots/2-case.png)
 

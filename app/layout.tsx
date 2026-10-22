@@ -2,7 +2,7 @@ import './globals.css'
 
 export const metadata = {
   title: 'ArrivalOps',
-  description: 'See the customer who never checked in: Ring-powered curbside rescue for small businesses',
+  description: 'Ring-powered pickup exception management: rescue the customer who is waiting but never checked in',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
