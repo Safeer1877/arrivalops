@@ -59,6 +59,11 @@ describe('observe', () => {
     expect(c.candidateOrderIds).toEqual(['o1047', 'o1042']) // o1050 is 90 min away and not ready
   })
 
+  it('treats grey, gray and silver as the same colour when ranking', () => {
+    const c = observe(state, obs(1, { colour: 'gray' }), ctx(1))!
+    expect(c.candidateOrderIds[0]).toBe('o1047')
+  })
+
   it('does nothing when the bay is empty or the car is passing', () => {
     expect(observe(state, obs(1, { vehiclePresent: false }), ctx(1))).toBeNull()
     expect(observe(state, obs(1, { stopped: false }), ctx(1))).toBeNull()

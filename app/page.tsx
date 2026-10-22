@@ -52,7 +52,7 @@ export default function Desk() {
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-semibold ${live ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}
           >
-            {live ? 'Live · Ring camera' : 'Replay · recorded Ring session'}
+            {live ? 'Live · Ring camera' : 'Replay · real Ring Playground frames, staged'}
           </span>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             {view.canUndo && (
@@ -136,9 +136,13 @@ export default function Desk() {
         </div>
 
         <footer className="pb-6 text-xs text-slate-500">
-          Orders and check-ins are simulated demo data. Camera frames come from the Ring Developer Playground
-          {live ? ' (live)' : ' (recorded)'}; vehicle checks run on Amazon Bedrock ({view.mode?.visionModel}). Licence plates and faces are
-          never read.
+          Orders and check-ins are simulated demo data.{' '}
+          {live
+            ? `Video is live from the Ring Developer Playground and each changed frame is checked on Amazon Bedrock (${view.mode?.visionModel}).`
+            : view.mode?.replayAnswersRecorded
+              ? `Replay uses real Ring Developer Playground frames in a staged order, with the answers Amazon Bedrock (${view.mode?.visionModel}) gave for each frame.`
+              : 'Replay uses real Ring Developer Playground frames in a staged order; the vehicle answers shown are scripted, not live model output.'}{' '}
+          Licence plates and faces are never read.
         </footer>
       </div>
 

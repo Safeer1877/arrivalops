@@ -4,7 +4,7 @@
 import type { Order, State } from './types'
 
 const PEOPLE: Array<[string, string[], number, string | undefined]> = [
-  ['Sarah M.', ['Chicken shawarma bowl', 'Mint lemonade'], 1850, 'silver hatchback'],
+  ['Sarah M.', ['Chicken shawarma bowl', 'Mint lemonade'], 1850, 'grey hatchback'],
   ['Daniel K.', ['Margherita pizza', 'Garlic knots'], 2690, undefined],
   ['Priya S.', ['Veg thali x2'], 3200, 'red suv'],
   ['Tom W.', ['Fish & chips', 'Coleslaw'], 1575, undefined],

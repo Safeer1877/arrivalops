@@ -116,7 +116,7 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
               <img src={replayFrame} alt="Recorded Ring Playground frame" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-slate-300">
-                <p className="font-semibold">Pickup bay · recorded Ring Playground session</p>
+                <p className="font-semibold">Pickup bays · real Ring Playground frames</p>
                 <p className="text-sm text-slate-400">Press Play to watch a car arrive without checking in.</p>
               </div>
             )}

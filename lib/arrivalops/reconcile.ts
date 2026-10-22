@@ -36,13 +36,17 @@ export function isDue(order: Order, now: Date): boolean {
 
 const WORDS = /[a-z]+/g
 
+// People and models name the same car colour differently; treat these as one.
+const SAME_COLOUR: Record<string, string> = { gray: 'grey', silver: 'grey' }
+const words = (s: string) => (s.toLowerCase().match(WORDS) ?? []).map((w) => SAME_COLOUR[w] ?? w)
+
 /** Rank due orders for a sighting: a matching customer-provided vehicle hint first, then pickup time. */
 export function rankCandidates(orders: Order[], obs: Observation, now: Date): string[] {
-  const seen = new Set([obs.vision.colour, obs.vision.vehicleType].join(' ').toLowerCase().match(WORDS) ?? [])
+  const seen = new Set(words([obs.vision.colour, obs.vision.vehicleType].join(' ')))
   return orders
     .filter((o) => isDue(o, now))
     .map((o) => {
-      const hint = o.vehicleHint?.toLowerCase().match(WORDS) ?? []
+      const hint = o.vehicleHint ? words(o.vehicleHint) : []
       const hintScore = hint.filter((w) => seen.has(w)).length
       const minutesOff = Math.abs(now.getTime() - ms(o.pickupAt)) / 60_000
       return { id: o.id, score: hintScore * 2 + Math.max(0, 1 - minutesOff / 60) }

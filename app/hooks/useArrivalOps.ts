@@ -13,7 +13,7 @@ export interface DeskView {
   metrics: Metrics
   canUndo: string | null
   now: string
-  mode?: { live: boolean; visionModel: string }
+  mode?: { live: boolean; visionModel: string; replayAnswersRecorded: boolean }
 }
 
 const POLL_MS = 2000

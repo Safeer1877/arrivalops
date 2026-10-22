@@ -25,6 +25,6 @@ describe('replay recording', () => {
     const open = last!.view.cases.filter((c) => c.status === 'needs_review')
     expect(open).toHaveLength(1)
     const first = last!.view.orders.find((o) => o.id === open[0].candidateOrderIds[0])
-    expect(first?.vehicleHint).toBe('silver hatchback')
+    expect(first?.vehicleHint).toBe('grey hatchback')
   })
 })

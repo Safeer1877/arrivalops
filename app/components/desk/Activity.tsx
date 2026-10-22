@@ -24,7 +24,7 @@ export function Activity({ entries }: { entries: ActivityEntry[] }) {
         {entries.slice(0, 12).map((e) => (
           <li key={e.id} className="flex items-start gap-3 text-sm">
             <span className={`mt-1.5 h-2 w-2 flex-none rounded-full ${DOT[e.kind]}`} aria-hidden />
-            <span className="w-16 flex-none tabular-nums text-slate-400">{time(e.at)}</span>
+            <span className="w-20 flex-none whitespace-nowrap tabular-nums text-slate-400">{time(e.at)}</span>
             <span className="text-slate-700">{e.text}</span>
           </li>
         ))}

@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const { step } = await request.json().catch(() => ({ step: -1 }))
   const s = DEFAULT_STEPS[step]
   if (!Number.isInteger(step) || !s) return NextResponse.json({ error: 'Unknown replay step' }, { status: 400 })
-  const vision = { latencyMs: 0, model: `${MODEL_ID} (recorded)`, ...s.vision }
+  const vision = { latencyMs: 0, model: s.recorded ? `${MODEL_ID} (recorded)` : 'scripted answer', ...s.vision }
   const result = recordObservation({ ...REPLAY_DEVICE, source: 'replay', frame: s.frame }, vision)
   const next = DEFAULT_STEPS[step + 1]
   return NextResponse.json({

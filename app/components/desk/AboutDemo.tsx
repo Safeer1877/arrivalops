@@ -9,7 +9,7 @@ const ROWS: Array<[string, string]> = [
   ],
   [
     'Amazon Bedrock (Nova Lite) answering on frames from that video',
-    'Replay mode: a recorded Playground session with the model’s recorded answers, for visitors without a Ring token',
+    'Replay mode: real frames from the Playground’s Vehicle stream, played in a staged order (the clip never shows a car pulling in and waiting)',
   ],
   ['Reconciliation, metrics, undo and this desk', 'The 45-second call-out plays on this device, not on a Ring Chime'],
 ]

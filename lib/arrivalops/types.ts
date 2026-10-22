@@ -10,7 +10,7 @@ export interface Order {
   totalCents: number
   readyAt: string // ISO
   pickupAt: string // promised pickup time, ISO
-  vehicleHint?: string // optional, customer-provided at checkout ("silver hatchback")
+  vehicleHint?: string // optional, customer-provided at checkout ("grey hatchback")
   checkIn?: { at: string; source: CheckInSource }
   handedOverAt?: string
 }
