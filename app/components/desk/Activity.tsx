@@ -23,7 +23,12 @@ export function Activity({ entries }: { entries: ActivityEntry[] }) {
         <li key={e.id} className="flex items-baseline gap-3 px-4 py-1.5 text-[13px]">
           <span className={`h-1.5 w-1.5 flex-none -translate-y-0.5 rounded-full ${DOT[e.kind]}`} aria-hidden />
           <span className="w-16 flex-none whitespace-nowrap tabular-nums text-slate-400">{time(e.at)}</span>
-          <span className="min-w-0 text-slate-700">{e.text}</span>
+          <span className="min-w-0 text-slate-700">
+            {e.text}
+            {e.count && e.count > 1 && (
+              <span className="ml-1.5 rounded bg-slate-100 px-1 text-[11px] font-medium tabular-nums text-slate-500">×{e.count}</span>
+            )}
+          </span>
         </li>
       ))}
       {!entries.length && <li className="px-4 py-3 text-[13px] text-slate-400">Nothing yet today.</li>}

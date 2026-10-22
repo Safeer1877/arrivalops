@@ -106,6 +106,15 @@ describe('observe', () => {
     expect(observe(state, obs(5, { vehiclePresent: 'unclear', error: 'timeout' }), ctx(5))).toBeNull()
     expect(state.activity.some((a) => a.kind === 'vision_error')).toBe(true)
   })
+
+  it('counts a repeated camera error on one line and says Bedrock is not enabled', () => {
+    const failed = { vehiclePresent: 'unclear' as const, stopped: 'unclear' as const, error: 'Operation not allowed' }
+    for (const m of [1, 2, 3]) observe(state, obs(m, failed), ctx(m))
+    const errors = state.activity.filter((a) => a.kind === 'vision_error')
+    expect(errors).toHaveLength(1)
+    expect(errors[0].count).toBe(3)
+    expect(errors[0].text).toMatch(/Bedrock is not enabled for this AWS account/)
+  })
 })
 
 describe('dwell and departures', () => {

@@ -62,7 +62,7 @@ export function ZoneLayer({ zone, editing, onSave, onCancel }: Props) {
             className={`absolute rounded border-2 border-dashed ${editing ? 'border-white bg-white/10' : 'border-amber-300 bg-amber-300/5'}`}
             style={{ left: pct(shown.x), top: pct(shown.y), width: pct(shown.w), height: pct(shown.h) }}
           >
-            <span className="absolute -top-5 left-0 whitespace-nowrap rounded-sm bg-amber-300 px-1.5 py-px text-[11px] font-semibold text-amber-950">
+            <span className="absolute left-0 top-0 whitespace-nowrap rounded-br bg-amber-300 px-1.5 py-px text-[11px] font-semibold text-amber-950">
               Pickup bay
             </span>
           </div>

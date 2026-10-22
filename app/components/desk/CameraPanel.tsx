@@ -6,8 +6,13 @@ import { useWebRTCStream } from '../../hooks/useWebRTCStream'
 import type { ActionInput } from '@/lib/arrivalops/store'
 import type { DeskSettings, Observation, VisionResult } from '@/lib/arrivalops/types'
 import type { ReplayState } from '../../hooks/useArrivalOps'
-import { friendlyCameraError } from '@/lib/arrivalops/cameraErrors'
+import { friendlyCameraError, friendlyVisionError } from '@/lib/arrivalops/cameraErrors'
 import { ZoneLayer } from './ZoneLayer'
+
+// Ring's picture carries a black bar on the left and a burned-in timestamp strip along the bottom. Only the part
+// inside this box is shown, so the bay drawn on screen lines up with the camera picture, not the bars.
+// Same crop as the replay frames (1216×684 of 1280×720), as fractions so any stream size works.
+const LIVE_CROP = { x: 44 / 1280, y: 0, w: 1216 / 1280, h: 684 / 720 }
 
 /** One line under the picture: what the camera last saw in the bay, and which model said so. */
 function VisionStatus({
@@ -16,12 +21,14 @@ function VisionStatus({
   checking,
   idle,
   stalled,
+  region,
 }: {
   v?: VisionResult
   source: string
   checking?: boolean
   idle: string
   stalled?: boolean
+  region?: { w: number; h: number } | null
 }) {
   const text = stalled
     ? 'Feed frozen. Not watching until it reconnects.'
@@ -30,20 +37,22 @@ function VisionStatus({
       : !v
         ? idle
         : v.error
-          ? 'Couldn’t check this frame. Still watching.'
+          ? `Vehicle check unavailable. ${friendlyVisionError(v.error)}`
           : v.vehiclePresent === false
             ? 'Bay clear'
             : v.vehiclePresent === 'unclear'
               ? 'Unsure, maybe a vehicle'
               : `${[v.colour, v.vehicleType].filter(Boolean).join(' ') || 'Vehicle'} · ${v.stopped === true ? 'stopped' : v.stopped === false ? 'moving' : 'stopped?'}`
-  const dot = stalled ? 'bg-rose-500' : !v || checking ? 'bg-slate-500' : v.vehiclePresent === false ? 'bg-emerald-400' : 'bg-amber-400'
+  const dot =
+    stalled || v?.error ? 'bg-rose-500' : !v || checking ? 'bg-slate-500' : v.vehiclePresent === false ? 'bg-emerald-400' : 'bg-amber-400'
   return (
     <div title={v?.error} className="flex h-8 items-center gap-2 bg-slate-950 px-3 text-xs text-slate-200">
       <span className={`h-1.5 w-1.5 flex-none rounded-full ${dot}`} aria-hidden />
       <span className="min-w-0 flex-1 truncate font-medium first-letter:uppercase">{text}</span>
       {v && (
         <span className="flex-none text-slate-400">
-          {source} · {v.model.replace(/^us\./, '')}
+          {source}
+          {region && ` · bay ${region.w}×${region.h}`} · {v.model.replace(/^us\./, '')}
           {v.latencyMs ? ` · ${(v.latencyMs / 1000).toFixed(1)}s` : ''}
         </span>
       )}
@@ -69,12 +78,13 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
   const [device, setDevice] = useState<{ id: string; name: string } | null>(null)
   const [deviceError, setDeviceError] = useState<string | null>(null)
   const { streamActive, streamError, startStream, stopStream } = useWebRTCStream({ videoRef, deviceId: device?.id })
-  const { last, checking, stalled } = useFrameSampler({
+  const { last, checking, stalled, region } = useFrameSampler({
     videoRef,
     enabled: live && streamActive,
     deviceId: device?.id,
     deviceName: device?.name,
     zone: settings.zone,
+    crop: LIVE_CROP,
     onResult: onObserved,
   })
 
@@ -110,6 +120,14 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
           >
             {settings.zone ? 'Edit bay' : 'Mark pickup bay'}
           </button>
+          {live && streamActive && (
+            <button
+              onClick={stopStream}
+              className="h-7 rounded-md px-2.5 text-xs font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-900"
+            >
+              Stop camera
+            </button>
+          )}
           {!live && (
             <button
               onClick={replay.running ? stopReplay : startReplay}
@@ -122,10 +140,22 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
           )}
         </span>
       </header>
-      <div className="relative aspect-video bg-slate-900">
+      <div className="relative aspect-video overflow-hidden bg-slate-900">
         {live ? (
           <>
-            <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="absolute max-w-none object-fill"
+              style={{
+                left: `${(-LIVE_CROP.x / LIVE_CROP.w) * 100}%`,
+                top: `${(-LIVE_CROP.y / LIVE_CROP.h) * 100}%`,
+                width: `${100 / LIVE_CROP.w}%`,
+                height: `${100 / LIVE_CROP.h}%`,
+              }}
+            />
             {!streamActive && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
                 <button
@@ -159,14 +189,6 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
                   Reconnect
                 </button>
               </div>
-            )}
-            {streamActive && (
-              <button
-                onClick={stopStream}
-                className="absolute right-3 top-3 rounded-lg bg-black/60 px-3 py-1 text-xs text-white hover:bg-black/80"
-              >
-                Stop
-              </button>
             )}
           </>
         ) : (
@@ -207,6 +229,7 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
           source="Ring live"
           idle={streamActive ? 'Watching. Frames are only sent when the bay changes.' : 'Camera not started'}
           stalled={streamActive && stalled}
+          region={region}
         />
       ) : (
         <VisionStatus

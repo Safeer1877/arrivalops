@@ -9,6 +9,8 @@ interface Options {
   deviceId?: string
   deviceName?: string
   zone?: Zone | null
+  /** The part of the raw video that is on screen. The bay is drawn on screen, so it is measured inside this. */
+  crop?: Zone
   intervalMs?: number
   onResult?: () => void
 }
@@ -24,11 +26,14 @@ const STALL_TICKS = 2 // samples in a row with the video clock standing still be
  * heartbeat). Ring's CV guidelines recommend filtering early so the expensive model only sees useful frames.
  * Only the marked bay is cropped out and sent, which also keeps the rest of the street out of the request.
  */
-export function useFrameSampler({ videoRef, enabled, deviceId, deviceName, zone, intervalMs = 3000, onResult }: Options) {
+const FULL: Zone = { x: 0, y: 0, w: 1, h: 1 }
+
+export function useFrameSampler({ videoRef, enabled, deviceId, deviceName, zone, crop = FULL, intervalMs = 3000, onResult }: Options) {
   const [last, setLast] = useState<{ vision: VisionResult; at: number } | null>(null)
   const [stats, setStats] = useState({ sampled: 0, sent: 0 })
   const [checking, setChecking] = useState(false)
   const [stalled, setStalled] = useState(false)
+  const [region, setRegion] = useState<{ w: number; h: number } | null>(null)
   const prev = useRef<Uint8ClampedArray | null>(null)
   const lastSent = useRef(0)
   const inFlight = useRef(false)
@@ -36,6 +41,8 @@ export function useFrameSampler({ videoRef, enabled, deviceId, deviceName, zone,
   // restarted the sampling interval before it ever fired, so the effect keys on the zone's numbers instead.
   const zoneRef = useRef(zone)
   zoneRef.current = zone
+  const cropRef = useRef(crop)
+  cropRef.current = crop
   const onResultRef = useRef(onResult)
   onResultRef.current = onResult
   const zoneKey = zone ? [zone.x, zone.y, zone.w, zone.h].join(',') : 'all'
@@ -58,11 +65,12 @@ export function useFrameSampler({ videoRef, enabled, deviceId, deviceName, zone,
       lastTime = video.currentTime
       setStalled(still >= STALL_TICKS)
       if (still || video.readyState < 2 || inFlight.current) return
-      const z = zoneRef.current ?? { x: 0, y: 0, w: 1, h: 1 }
-      const sx = z.x * video.videoWidth
-      const sy = z.y * video.videoHeight
-      const sw = Math.max(1, z.w * video.videoWidth)
-      const sh = Math.max(1, z.h * video.videoHeight)
+      const z = zoneRef.current ?? FULL
+      const c = cropRef.current
+      const sx = (c.x + z.x * c.w) * video.videoWidth
+      const sy = (c.y + z.y * c.h) * video.videoHeight
+      const sw = Math.max(1, z.w * c.w * video.videoWidth)
+      const sh = Math.max(1, z.h * c.h * video.videoHeight)
       const sctx = small.getContext('2d', { willReadFrequently: true })!
       sctx.drawImage(video, sx, sy, sw, sh, 0, 0, SMALL_W, SMALL_H)
       const px = sctx.getImageData(0, 0, SMALL_W, SMALL_H).data
@@ -85,6 +93,7 @@ export function useFrameSampler({ videoRef, enabled, deviceId, deviceName, zone,
       big.height = Math.round((big.width * sh) / sw)
       big.getContext('2d')!.drawImage(video, sx, sy, sw, sh, 0, 0, big.width, big.height)
       const frame = big.toDataURL('image/jpeg', 0.72)
+      setRegion({ w: big.width, h: big.height })
       inFlight.current = true
       setChecking(true)
       lastSent.current = now
@@ -112,5 +121,5 @@ export function useFrameSampler({ videoRef, enabled, deviceId, deviceName, zone,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, deviceId, deviceName, zoneKey, intervalMs, videoRef])
 
-  return { last, stats, checking, stalled }
+  return { last, stats, checking, stalled, region }
 }

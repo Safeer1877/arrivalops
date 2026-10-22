@@ -91,6 +91,7 @@ export interface ActivityEntry {
     | 'left'
     | 'settings'
   text: string
+  count?: number // the same line repeated back to back is kept as one entry
   caseId?: string
   orderId?: string
 }

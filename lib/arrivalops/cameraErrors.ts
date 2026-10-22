@@ -8,3 +8,12 @@ export function friendlyCameraError(message: string): string {
   if (/fetch|network/i.test(message)) return 'Can’t reach Ring right now. Check the connection and try again.'
   return message
 }
+
+/** Bedrock errors, in words that say whose problem it is. */
+export function friendlyVisionError(message: string): string {
+  if (/operation not allowed|access ?denied|not authori[sz]ed|don't have access/i.test(message))
+    return 'Amazon Bedrock is not enabled for this AWS account ("' + message + '").'
+  if (/throttl|too many requests/i.test(message)) return 'Amazon Bedrock is busy; frames will be retried.'
+  if (/credential|security token/i.test(message)) return 'AWS credentials are missing or expired.'
+  return message
+}

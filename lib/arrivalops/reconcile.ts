@@ -1,6 +1,7 @@
 // The heart of ArrivalOps: decide whether a vehicle at the pickup bay is a customer nobody knows about,
 // and walk the case from "needs review" to "handed over". Pure functions over State, so they're easy to test.
 
+import { friendlyVisionError } from './cameraErrors'
 import type { ActivityEntry, DeskSettings, DismissReason, Observation, Order, ReviewCase, State } from './types'
 
 export const DUE_BEFORE_MIN = 20 // an order is "due" from 20 min before its pickup time...
@@ -30,6 +31,13 @@ function strip(state: State): Omit<State, 'undo'> {
 }
 
 function log(state: State, ctx: Ctx, entry: Omit<ActivityEntry, 'id' | 'at'>): void {
+  // A line that repeats the one before it (a camera error every few seconds) bumps a count instead of a new row.
+  const top = state.activity[0]
+  if (top && top.kind === entry.kind && top.text === entry.text) {
+    top.count = (top.count ?? 1) + 1
+    top.at = iso(ctx.now)
+    return
+  }
   state.activity.unshift({ id: ctx.id('act'), at: iso(ctx.now), ...entry })
   state.activity.length = Math.min(state.activity.length, 200)
 }
@@ -163,7 +171,10 @@ export function observe(state: State, obs: Observation, ctx: Ctx): ReviewCase | 
   state.observations.length = Math.min(state.observations.length, 100)
 
   if (obs.vision.error) {
-    log(state, ctx, { kind: 'vision_error', text: `Couldn't analyse a frame from ${obs.deviceName ?? 'camera'}: ${obs.vision.error}` })
+    log(state, ctx, {
+      kind: 'vision_error',
+      text: `Vehicle check failed on ${obs.deviceName ?? 'camera'}: ${friendlyVisionError(obs.vision.error)}`,
+    })
   }
   const open = activeCase(state, obs, ctx.now)
   // Only changes are logged; a camera that keeps seeing the same thing shouldn't bury the activity feed.

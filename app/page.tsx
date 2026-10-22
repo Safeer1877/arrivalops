@@ -281,7 +281,7 @@ export default function Desk() {
         </div>
       </div>
 
-      <footer className="flex-none truncate px-4 pb-2 text-[11px] text-slate-400" title="Licence plates and faces are never read.">
+      <footer className="flex-none truncate px-4 pb-2 pt-1.5 text-[11px] text-slate-400" title="Licence plates and faces are never read.">
         Orders and check-ins are simulated demo data.{' '}
         {live
           ? `Each changed frame of the Ring video is checked on Amazon Bedrock (${view.mode?.visionModel}).`
