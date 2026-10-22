@@ -4,20 +4,20 @@
 
 A takeaway has three orders ready. A car pulls into the pickup bay, but the driver never taps "I'm here". Staff are busy, the food goes cold, and the customer phones in, annoyed, or drives off. Ordering systems like Toast and Square only know about customers who check in. **ArrivalOps handles the exception**: the shop's Ring camera notices a car waiting in the bay, ArrivalOps checks it against the ready orders that have no check-in, and staff get one clear card. They ask the driver's name, tap the order, hand it over, and the arrival-to-handover time is recorded.
 
-![Pickup desk with a car waiting and no check-in](docs/screenshots/2-case.png)
+![Pickup desk with a car waiting and no check-in](docs/screenshots/3-case.png)
 
 ## What it does
 
 | Step | What happens | Built with |
 |---|---|---|
-| 1. Watch | The pickup desk streams the shop's Ring camera and samples frames. Only frames where the scene changed are sent on, plus a slow heartbeat, following Ring's guidance to filter early. | Ring Partner API: device discovery, WHEP live video |
+| 1. Watch | The pickup desk streams the shop's Ring camera and samples frames inside the pickup bay the owner marked on the picture, so cars parked elsewhere are ignored. Only frames where the bay changed are sent on, plus a slow heartbeat, following Ring's guidance to filter early. | Ring Partner API: device discovery, WHEP live video |
 | 2. Check | One narrow question goes to a Bedrock vision model: is a vehicle *waiting* in the bay? Coarse attributes only (colour, body type). Licence plates and people are never read, and output is validated against a strict schema. | Amazon Bedrock (Nova Lite, Converse API) |
-| 3. Reconcile | A car that's waiting is matched against ready orders with no check-in that are due around now. If every waiting customer already checked in, nothing happens. Repeat sightings fold into one case. | `lib/arrivalops/reconcile.ts` |
+| 3. Reconcile | A stopped car is watched quietly first. Only if it is still there after the dwell time (1 minute by default) and some order due around now has no check-in do staff hear about it. Candidates include orders still being prepared, with the reason each one is listed ("Said ‘grey hatchback’", "Due 6 min ago", "Still preparing, ready in 8 min"). Repeat sightings fold into one case, and the activity feed records changes, not every frame. | `lib/arrivalops/reconcile.ts` |
 | 4. Rescue | Staff see "Silver hatchback in the pickup bay · waiting 0:42" and up to three candidate orders, best guess first (for example, a customer who said "silver hatchback" at checkout). They confirm with the driver. ArrivalOps never contacts or identifies anyone on its own. | Staff desk (Next.js) |
 | 5. Call out | If nobody acts within 45 seconds, the counter tablet chimes and says "A car is waiting in the pickup bay with no check-in." | Web Audio + speech |
-| 6. Measure | Food going cold (value of overdue, unclaimed orders), cars rescued today, median time to notice, and median arrival-to-handover. | `lib/arrivalops/metrics.ts` |
+| 6. Measure | Food going cold (value of overdue, unclaimed orders), cars rescued today, median alert-to-staff time, arrival-to-handover, and **Missed today**: a car that drives off after the alert with nobody coming out is recorded as a lost pickup and shown on the desk so someone can call the customer. | `lib/arrivalops/metrics.ts` |
 
-Every staff action can be undone, and a customer who checks in late through the app closes the case automatically.
+Every staff action can be undone, settings (bay, dwell, call-out delay) are per shop, and a customer who checks in late through the app closes the case automatically.
 
 ## Why it matters
 
@@ -27,7 +27,7 @@ Every staff action can be undone, and a customer who checks in late through the 
 
 ## Try it
 
-**Hosted demo (no account needed):** _link added at submission_. It opens in **Replay** mode: a recorded run of the Ring Developer Playground *Vehicle* stream, with the Bedrock answers captured during recording. Press **Play recorded arrival**, then work the case.
+**Hosted demo (no account needed):** _link added at submission_. It opens in **Replay** mode: real frames from the Ring Developer Playground *Vehicle* stream played in a staged order (the Playground clip has no car that arrives and waits). Until recorded Bedrock answers are added, the vehicle answers in replay are labelled “scripted answer”. Press **Play recorded arrival**. Let it run to the end to see a missed pickup, or press **Play again** and match the driver to their order. Each visitor gets their own board, and the **Demo controls** panel stands in for the ordering system (a customer tapping "I'm here", restarting the lunch rush). Demo timings are shortened (6 s dwell, 20 s call-out) and say so on screen.
 
 **Run it yourself:**
 

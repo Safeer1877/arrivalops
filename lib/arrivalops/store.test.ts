@@ -25,6 +25,7 @@ describe('dispatch', () => {
 
   it('runs the whole rescue on the seeded demo shop', () => {
     dispatch({ action: 'reset' }, ctx())
+    dispatch({ action: 'settings', dwellSeconds: 0 }, ctx())
     const { caseId, view } = recordObservation({ deviceId: 'cam', source: 'synthetic' }, vision, ctx())
     expect(caseId).not.toBeNull()
     expect(view.metrics.openCases).toBe(1)
@@ -39,6 +40,7 @@ describe('dispatch', () => {
 describe('boards', () => {
   it('keeps each visitor board separate from the others and from the shop', () => {
     dispatch({ action: 'reset' }, ctx(), 'visitor-a')
+    dispatch({ action: 'settings', dwellSeconds: 0 }, ctx(), 'visitor-a')
     dispatch({ action: 'reset' }, ctx(), 'visitor-b')
     const a = recordObservation({ deviceId: 'cam', source: 'synthetic' }, vision, ctx(), 'visitor-a')
     expect(a.view.metrics.openCases).toBe(1)

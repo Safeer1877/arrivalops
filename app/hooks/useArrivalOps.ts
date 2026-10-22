@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Metrics } from '@/lib/arrivalops/metrics'
 import type { ActionInput } from '@/lib/arrivalops/store'
-import type { ActivityEntry, Observation, Order, ReviewCase } from '@/lib/arrivalops/types'
+import type { ActivityEntry, DeskSettings, Observation, Order, ReviewCase } from '@/lib/arrivalops/types'
 
 export interface DeskView {
   orders: Order[]
@@ -11,6 +11,7 @@ export interface DeskView {
   observations: Observation[]
   activity: ActivityEntry[]
   metrics: Metrics
+  settings: DeskSettings
   canUndo: string | null
   now: string
   mode?: { live: boolean; visionModel: string; replayAnswersRecorded: boolean }

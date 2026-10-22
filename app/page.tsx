@@ -5,9 +5,11 @@ import { AboutDemo } from './components/desk/AboutDemo'
 import { Activity } from './components/desk/Activity'
 import { CameraPanel } from './components/desk/CameraPanel'
 import { CaseCard } from './components/desk/CaseCard'
+import { DemoControls } from './components/desk/DemoControls'
 import { Kpis } from './components/desk/Kpis'
 import { Logo } from './components/desk/Logo'
 import { PickupQueue } from './components/desk/PickupQueue'
+import { WatchingCard } from './components/desk/WatchingCard'
 import { announce, useArrivalOps } from './hooks/useArrivalOps'
 
 const SHOP = process.env.NEXT_PUBLIC_SHOP_NAME || 'Corner Kitchen'
@@ -37,6 +39,10 @@ export default function Desk() {
 
   const live = Boolean(view.mode?.live) && !forceReplay
   const active = view.cases.filter((c) => c.status === 'needs_review' || c.status === 'matched')
+  const watching = view.cases.filter((c) => c.status === 'watching')
+  // A customer who gave up in the last 15 minutes stays visible so someone can call them.
+  const missed = view.cases.find((c) => c.status === 'left' && c.resolvedAt && now - new Date(c.resolvedAt).getTime() < 15 * 60_000)
+  const missedText = missed && view.activity.find((a) => a.kind === 'left' && a.caseId === missed.id)?.text
 
   return (
     <main className="min-h-screen bg-stone-100 text-slate-900">
@@ -78,18 +84,6 @@ export default function Desk() {
             <button onClick={() => setAboutOpen(true)} className="min-h-11 rounded-lg px-3 text-sm text-slate-600 hover:bg-stone-200">
               About<span className="hidden sm:inline"> this demo</span>
             </button>
-            {!live && (
-              <button
-                disabled={busy}
-                onClick={() => {
-                  stopReplay()
-                  act({ action: 'reset' })
-                }}
-                className="min-h-11 rounded-lg px-3 text-sm text-slate-500 hover:bg-stone-200"
-              >
-                Reset demo
-              </button>
-            )}
           </div>
         </div>
         {offline && (
@@ -113,13 +107,43 @@ export default function Desk() {
                 startReplay={startReplay}
                 stopReplay={stopReplay}
                 onObserved={refresh}
+                settings={view.settings}
+                busy={busy}
+                act={act}
               />
             </div>
             <div className="order-1 space-y-4 lg:order-2" aria-live="polite">
               {active.map((c) => (
-                <CaseCard key={c.id} c={c} orders={view.orders} observations={view.observations} now={now} busy={busy} act={act} />
+                <CaseCard
+                  key={c.id}
+                  c={c}
+                  calloutSeconds={view.settings.calloutSeconds}
+                  orders={view.orders}
+                  observations={view.observations}
+                  now={now}
+                  busy={busy}
+                  act={act}
+                />
               ))}
-              {!active.length && (
+              {watching.map((c) => (
+                <WatchingCard
+                  key={c.id}
+                  c={c}
+                  obs={view.observations.find((o) => o.id === c.observationIds[0])}
+                  dwellSeconds={view.settings.dwellSeconds}
+                  now={now}
+                />
+              ))}
+              {missedText && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+                  <p className="text-sm font-semibold uppercase tracking-wide text-rose-700">Missed pickup</p>
+                  <p className="mt-1 font-semibold text-slate-900">{missedText}.</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Their order is still on the shelf. Check the queue for who was due and give them a call.
+                  </p>
+                </div>
+              )}
+              {!active.length && !watching.length && (
                 <div className="rounded-2xl border border-dashed border-stone-300 px-5 py-6 text-center">
                   <p className="font-semibold text-slate-700">No cars waiting unnoticed</p>
                   <p className="mt-1 text-sm text-slate-500">
@@ -132,6 +156,18 @@ export default function Desk() {
           <div className="space-y-6">
             <PickupQueue orders={view.orders} now={now} busy={busy} act={act} />
             <Activity entries={view.activity} />
+            {!live && (
+              <DemoControls
+                orders={view.orders}
+                settings={view.settings}
+                busy={busy}
+                act={act}
+                onReset={() => {
+                  stopReplay()
+                  act({ action: 'reset' })
+                }}
+              />
+            )}
           </div>
         </div>
 

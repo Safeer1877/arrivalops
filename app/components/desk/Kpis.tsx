@@ -26,15 +26,20 @@ export function Kpis({ m }: { m: Metrics }) {
         tone={m.valueAtRiskCents ? 'text-rose-600' : 'text-slate-900'}
         sub={`${m.ordersAtRisk} ready order${m.ordersAtRisk === 1 ? '' : 's'} past pickup, no check-in`}
       />
-      <Tile label="Rescued today" value={String(m.rescuedToday)} sub="Handed over after the camera spotted them" />
       <Tile
-        label="Time to notice"
-        value={clock(m.medianSecondsToAcknowledge)}
+        label="Rescued today"
+        value={String(m.rescuedToday)}
         sub={
-          m.medianSecondsArrivalToHandover === null
-            ? 'Median. No handovers yet today'
-            : `Median. Arrival to handover: ${clock(m.medianSecondsArrivalToHandover)}`
+          m.medianSecondsToAcknowledge === null
+            ? 'Handed over after the camera spotted them'
+            : `Median ${clock(m.medianSecondsToAcknowledge)} from alert to staff outside`
         }
+      />
+      <Tile
+        label="Missed today"
+        value={String(m.missedToday)}
+        tone={m.missedToday ? 'text-rose-600' : 'text-slate-900'}
+        sub="Drove off before anyone came out"
       />
     </div>
   )

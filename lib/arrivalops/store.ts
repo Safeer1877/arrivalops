@@ -7,8 +7,21 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { z } from 'zod'
 import { computeMetrics } from './metrics'
-import { ActionError, casesToAnnounce, confirmMatch, dismiss, handOver, observe, posCheckIn, undo, type Ctx } from './reconcile'
-import { seedState } from './seed'
+import {
+  ActionError,
+  casesToAnnounce,
+  confirmMatch,
+  dismiss,
+  handOver,
+  observe,
+  posCheckIn,
+  promote,
+  settingsOf,
+  undo,
+  updateSettings,
+  type Ctx,
+} from './reconcile'
+import { DEMO_SETTINGS, seedState } from './seed'
 import type { Observation, State, VisionResult } from './types'
 
 const DATA_FILE = process.env.ARRIVALOPS_DATA_DIR ? join(process.env.ARRIVALOPS_DATA_DIR, 'state.json') : null
@@ -26,8 +39,10 @@ function load(boardId: string): State {
       // fall through to a fresh board
     }
   }
-  return seedState()
+  return fresh(boardId)
 }
+
+const fresh = (boardId: string, now = new Date()) => seedState(now, boardId === SHOP_BOARD ? undefined : DEMO_SETTINGS)
 
 export function getState(boardId = SHOP_BOARD): State {
   const boards = (g.__arrivalops ??= new Map())
@@ -60,6 +75,7 @@ export function view(state = getState(), now = new Date()) {
     observations: state.observations.slice(0, 12),
     activity: state.activity.slice(0, 40),
     metrics: computeMetrics(state, now),
+    settings: settingsOf(state),
     canUndo: state.undo?.label ?? null,
     now: now.toISOString(),
   }
@@ -71,6 +87,15 @@ const Action = z.discriminatedUnion('action', [
   z.object({ action: z.literal('hand_over'), orderId: z.string() }),
   z.object({ action: z.literal('pos_check_in'), orderId: z.string() }),
   z.object({ action: z.literal('undo') }),
+  z.object({
+    action: z.literal('settings'),
+    zone: z
+      .object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1), w: z.number().min(0.05).max(1), h: z.number().min(0.05).max(1) })
+      .nullable()
+      .optional(),
+    dwellSeconds: z.number().int().min(0).max(600).optional(),
+    calloutSeconds: z.number().int().min(5).max(600).optional(),
+  }),
   z.object({ action: z.literal('reset') }),
 ])
 export type ActionInput = z.infer<typeof Action>
@@ -96,8 +121,13 @@ export function dispatch(input: unknown, ctx = ctxNow(), boardId = SHOP_BOARD) {
     case 'undo':
       undo(state, ctx)
       break
+    case 'settings': {
+      const { action: _a, ...patch } = a
+      updateSettings(state, patch, ctx)
+      break
+    }
     case 'reset':
-      state = seedState(ctx.now)
+      state = fresh(boardId, ctx.now)
       g.__arrivalops!.set(boardId, state)
       break
   }
@@ -121,6 +151,7 @@ export function recordObservation(
 /** Mark overdue cases as announced and return them; the caller plays them on the chime. */
 export function takeAnnouncements(ctx = ctxNow(), boardId = SHOP_BOARD) {
   const state = getState(boardId)
+  promote(state, ctx) // a car can pass the dwell time between sightings
   const due = casesToAnnounce(state, ctx.now)
   for (const c of due) c.chimeAnnouncedAt = ctx.now.toISOString()
   if (due.length) save(state, boardId)

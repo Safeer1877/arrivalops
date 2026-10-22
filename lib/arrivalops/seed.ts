@@ -1,7 +1,8 @@
 // A demo takeaway's lunch rush, laid out relative to "now" so the board always looks live.
 // Clearly labelled as simulated ordering data: ArrivalOps doesn't connect to a real POS in this build.
 
-import type { Order, State } from './types'
+import { SHOP_SETTINGS } from './reconcile'
+import type { DeskSettings, Order, State } from './types'
 
 const PEOPLE: Array<[string, string[], number, string | undefined]> = [
   ['Sarah M.', ['Chicken shawarma bowl', 'Mint lemonade'], 1850, 'grey hatchback'],
@@ -22,7 +23,16 @@ const TIMING: Array<[number, boolean, boolean]> = [
   [40, false, false],
 ]
 
-export function seedState(now = new Date()): State {
+// The replay demo's timings are shortened so a visitor sees the whole story in about a minute; the desk says so.
+// Its pickup bay is the front row of the Playground lot, so the cars parked at the back are never checked.
+export const DEMO_SETTINGS: DeskSettings = {
+  zone: { x: 0.55, y: 0.47, w: 0.43, h: 0.36 },
+  dwellSeconds: 6,
+  calloutSeconds: 20,
+  demoTiming: true,
+}
+
+export function seedState(now = new Date(), settings: DeskSettings = SHOP_SETTINGS): State {
   const at = (min: number) => new Date(now.getTime() + min * 60_000).toISOString()
   const orders: Order[] = PEOPLE.map(([customer, items, totalCents, vehicleHint], i) => {
     const [pickup, checkedIn, handed] = TIMING[i]
@@ -39,5 +49,5 @@ export function seedState(now = new Date()): State {
       handedOverAt: handed ? at(pickup + 3) : undefined,
     }
   })
-  return { orders, observations: [], cases: [], activity: [] }
+  return { settings, orders, observations: [], cases: [], activity: [] }
 }

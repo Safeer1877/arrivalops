@@ -42,8 +42,11 @@ export function PickupQueue({ orders, now, busy, act }: Props) {
         {sorted.map((o) => {
           const s = status(o, now)
           return (
-            <li key={o.id} className={`flex items-center gap-3 px-4 py-3 ${o.handedOverAt ? 'opacity-60' : ''}`}>
-              <div className="min-w-0 flex-1">
+            <li
+              key={o.id}
+              className={`flex flex-wrap items-center justify-end gap-x-3 gap-y-2 px-4 py-3 ${o.handedOverAt ? 'opacity-60' : ''}`}
+            >
+              <div className="min-w-[12rem] flex-1">
                 <p className="truncate font-semibold text-slate-900">
                   #{o.code} · {o.customer}
                 </p>
@@ -59,16 +62,6 @@ export function PickupQueue({ orders, now, busy, act }: Props) {
                   className="min-h-11 flex-none rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
                 >
                   Handed over
-                </button>
-              )}
-              {!o.handedOverAt && !o.checkIn && (
-                <button
-                  disabled={busy}
-                  onClick={() => act({ action: 'pos_check_in', orderId: o.id })}
-                  title="Simulates the customer tapping “I'm here” in the ordering app"
-                  className="flex-none rounded-lg border border-dashed border-slate-300 px-2 py-1 text-xs text-slate-500 hover:border-slate-500"
-                >
-                  Sim: app check-in
                 </button>
               )}
             </li>

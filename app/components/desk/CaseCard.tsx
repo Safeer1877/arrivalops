@@ -1,11 +1,13 @@
 'use client'
 
+import { candidateReasons } from '@/lib/arrivalops/reconcile'
 import type { ActionInput } from '@/lib/arrivalops/store'
 import type { Observation, Order, ReviewCase } from '@/lib/arrivalops/types'
-import { clock, money, relMinutes } from './format'
+import { clock, money } from './format'
 
 interface Props {
   c: ReviewCase
+  calloutSeconds: number
   orders: Order[]
   observations: Observation[]
   now: number
@@ -21,10 +23,11 @@ function vehicleLabel(o?: Observation) {
   return name ? name[0].toUpperCase() + name.slice(1) : 'Vehicle'
 }
 
-export function CaseCard({ c, orders, observations, now, busy, act }: Props) {
+export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, act }: Props) {
   const obs = observations.find((o) => o.id === c.observationIds[0])
-  const waiting = (now - new Date(c.openedAt).getTime()) / 1000
-  const urgent = c.status === 'needs_review' && waiting >= 45
+  const waiting = (now - new Date(c.firstSeenAt ?? c.openedAt).getTime()) / 1000
+  const alerted = (now - new Date(c.openedAt).getTime()) / 1000
+  const urgent = c.status === 'needs_review' && alerted >= calloutSeconds
   const matched = orders.find((o) => o.id === c.matchedOrderId)
 
   if (c.status === 'matched' && matched) {
@@ -93,9 +96,22 @@ export function CaseCard({ c, orders, observations, now, busy, act }: Props) {
                 <span className="block text-lg font-semibold text-slate-900">
                   #{o.code} · {o.customer}
                 </span>
-                <span className="block truncate text-sm text-slate-500">
-                  Due {relMinutes(o.pickupAt, now)} · {o.items.join(', ')}
-                  {o.vehicleHint && ` · said “${o.vehicleHint}”`}
+                <span className="block truncate text-sm text-slate-500">{o.items.join(', ')}</span>
+                <span className="mt-1.5 flex flex-wrap gap-1.5">
+                  {candidateReasons(o, obs, new Date(now)).map((r) => (
+                    <span
+                      key={r}
+                      className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${
+                        r.startsWith('Said')
+                          ? 'bg-emerald-50 text-emerald-800'
+                          : r.startsWith('Still preparing')
+                            ? 'bg-sky-50 text-sky-800'
+                            : 'bg-stone-100 text-slate-600'
+                      }`}
+                    >
+                      {r}
+                    </span>
+                  ))}
                 </span>
               </span>
               <span className="flex-none text-right">

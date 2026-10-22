@@ -3,14 +3,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFrameSampler } from '../../hooks/useFrameSampler'
 import { useWebRTCStream } from '../../hooks/useWebRTCStream'
-import type { Observation, VisionResult } from '@/lib/arrivalops/types'
+import type { ActionInput } from '@/lib/arrivalops/store'
+import type { DeskSettings, Observation, VisionResult } from '@/lib/arrivalops/types'
 import type { ReplayState } from '../../hooks/useArrivalOps'
 import { friendlyCameraError } from '@/lib/arrivalops/cameraErrors'
+import { ZoneLayer } from './ZoneLayer'
 
 function VisionChip({ v, source, checking }: { v?: VisionResult; source: string; checking?: boolean }) {
   if (!v) {
     return (
-      <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-black/70 px-3 py-2 text-sm text-white">
+      <div className="bg-slate-900 px-4 py-2 text-sm text-white">
         {checking ? 'Checking frame…' : 'Watching. Frames are only sent when the scene changes.'}
       </div>
     )
@@ -27,7 +29,7 @@ function VisionChip({ v, source, checking }: { v?: VisionResult; source: string;
   return (
     <div
       title={v.error}
-      className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 rounded-xl bg-black/70 px-3 py-2 text-sm text-white"
+      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 bg-slate-900 px-4 py-2 text-sm text-white"
     >
       <span className="font-semibold">{text}</span>
       <span className="text-xs text-white/70">
@@ -45,9 +47,13 @@ interface Props {
   startReplay: () => void
   stopReplay: () => void
   onObserved: () => void
+  settings: DeskSettings
+  busy: boolean
+  act: (a: ActionInput) => Promise<void> | void
 }
 
-export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onObserved }: Props) {
+export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onObserved, settings, busy, act }: Props) {
+  const [editingZone, setEditingZone] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [device, setDevice] = useState<{ id: string; name: string } | null>(null)
   const [deviceError, setDeviceError] = useState<string | null>(null)
@@ -57,6 +63,7 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
     enabled: live && streamActive,
     deviceId: device?.id,
     deviceName: device?.name,
+    zone: settings.zone,
     onResult: onObserved,
   })
 
@@ -72,7 +79,8 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
       .catch((e) => setDeviceError(friendlyCameraError(e.message)))
   }, [live])
 
-  const replayFrame = latest?.source === 'replay' ? latest.frame : undefined
+  // Before anything has played, show the empty bays so the marked pickup bay has something to sit on.
+  const replayFrame = latest?.source === 'replay' ? latest.frame : '/replay/lot-bays-clear.jpg'
 
   return (
     <section aria-label="Pickup bay camera" className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900">
@@ -107,50 +115,65 @@ export function CameraPanel({ live, latest, replay, startReplay, stopReplay, onO
                 Stop
               </button>
             )}
-            {streamActive && <VisionChip v={last?.vision} checking={checking} source="Ring live" />}
           </>
         ) : (
           <>
-            {replayFrame ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={replayFrame} alt="Recorded Ring Playground frame" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-slate-300">
-                <p className="font-semibold">Pickup bays · real Ring Playground frames</p>
-                <p className="text-sm text-slate-400">Press Play to watch a car arrive without checking in.</p>
-              </div>
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={replayFrame} alt="Ring Playground camera view of the pickup bays" className="h-full w-full object-cover" />
             <div className="absolute left-3 top-3 rounded-lg bg-amber-400 px-2 py-1 text-xs font-bold text-amber-950">REPLAY</div>
-            <div className="absolute right-3 top-3 flex items-center gap-2">
-              {replay.note && (
-                <span className="flex items-center gap-2 rounded-lg bg-black/60 px-2 py-1 text-xs text-white">
-                  {replay.total > 0 && (
-                    <span className="flex gap-1" aria-label={`Step ${replay.step + 1} of ${replay.total}`}>
-                      {Array.from({ length: replay.total }, (_, i) => (
-                        <span key={i} className={`h-1.5 w-1.5 rounded-full ${i <= replay.step ? 'bg-white' : 'bg-white/30'}`} />
-                      ))}
-                    </span>
-                  )}
-                  {replay.note}
-                </span>
-              )}
-              <button
-                onClick={replay.running ? stopReplay : startReplay}
-                className={`min-h-11 rounded-lg bg-white px-4 text-sm font-semibold text-slate-900 hover:bg-slate-100 ${
-                  replay.played ? '' : 'ring-4 ring-amber-400/70 motion-safe:animate-pulse'
-                }`}
-              >
-                {replay.running ? 'Stop' : replay.played ? 'Play again' : 'Play recorded arrival'}
-              </button>
-            </div>
+            {replay.note && (
+              <span className="absolute left-24 top-3 flex items-center gap-2 rounded-lg bg-black/60 px-2 py-1 text-xs text-white">
+                {replay.total > 0 && (
+                  <span className="flex gap-1" aria-label={`Step ${replay.step + 1} of ${replay.total}`}>
+                    {Array.from({ length: replay.total }, (_, i) => (
+                      <span key={i} className={`h-1.5 w-1.5 rounded-full ${i <= replay.step ? 'bg-white' : 'bg-white/30'}`} />
+                    ))}
+                  </span>
+                )}
+                {replay.note}
+              </span>
+            )}
+            <button
+              onClick={replay.running ? stopReplay : startReplay}
+              className={`absolute right-3 top-3 min-h-11 rounded-lg bg-white px-4 text-sm font-semibold text-slate-900 hover:bg-slate-100 ${
+                replay.played ? '' : 'ring-4 ring-amber-400/70 motion-safe:animate-pulse'
+              }`}
+            >
+              {replay.running ? 'Stop' : replay.played ? 'Play again' : 'Play recorded arrival'}
+            </button>
             {!replay.played && !latest && (
-              <p className="absolute right-3 top-16 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-amber-950">
+              <p className="absolute right-3 top-16 hidden rounded-lg bg-amber-400 sm:block px-3 py-1.5 text-xs font-semibold text-amber-950">
                 Start here: a car arrives and waits without checking in
               </p>
             )}
-            {latest?.source === 'replay' && <VisionChip v={latest.vision} source="Replay" />}
           </>
         )}
+        <ZoneLayer
+          zone={settings.zone}
+          editing={editingZone}
+          onCancel={() => setEditingZone(false)}
+          onSave={async (zone) => {
+            await act({ action: 'settings', zone })
+            setEditingZone(false)
+          }}
+        />
+      </div>
+      {live
+        ? streamActive && <VisionChip v={last?.vision} checking={checking} source="Ring live" />
+        : latest?.source === 'replay' && <VisionChip v={latest.vision} source="Replay" />}
+      <div className="flex items-center justify-between gap-3 bg-white px-4 py-2 text-sm text-slate-600">
+        <span>
+          {settings.zone
+            ? 'Only the marked pickup bay is checked. Cars parked elsewhere are ignored.'
+            : 'The whole picture is checked. Mark the pickup bay so parked cars are ignored.'}
+        </span>
+        <button
+          disabled={busy || editingZone}
+          onClick={() => setEditingZone(true)}
+          className="min-h-11 flex-none rounded-lg px-3 font-semibold text-slate-700 ring-1 ring-stone-300 hover:bg-stone-50 disabled:opacity-50"
+        >
+          {settings.zone ? 'Move bay' : 'Mark pickup bay'}
+        </button>
       </div>
     </section>
   )

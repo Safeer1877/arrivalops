@@ -12,6 +12,8 @@ const DOT: Record<ActivityEntry['kind'], string> = {
   undo: 'bg-violet-500',
   chime: 'bg-amber-600',
   vision_error: 'bg-rose-500',
+  left: 'bg-rose-600',
+  settings: 'bg-slate-400',
 }
 
 export function Activity({ entries }: { entries: ActivityEntry[] }) {

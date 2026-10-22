@@ -18,22 +18,26 @@ export interface ReplayStep {
 export const REPLAY_DEVICE = { deviceId: 'replay.playground.vehicle', deviceName: 'Pickup bays (Ring Playground replay)' }
 
 const CAR_IN_BAY = { vehiclePresent: true, stopped: true, colour: 'grey', vehicleType: 'hatchback', confidence: 0.9 } as const
+const CLEAR = { vehiclePresent: false, stopped: 'unclear', confidence: 0.9 } as const
 
+const step = (delayMs: number, frame: 'clear' | 'car', note: string): ReplayStep => ({
+  delayMs,
+  frame: frame === 'car' ? '/replay/lot-car-in-bay.jpg' : '/replay/lot-bays-clear.jpg',
+  note,
+  recorded: false,
+  vision: frame === 'car' ? CAR_IN_BAY : CLEAR,
+})
+
+// About 80 seconds: the car stops, staff are alerted after the demo dwell time, the tablet calls it out if
+// nobody acts, and if the visitor still does nothing the customer gives up and drives off.
 export const DEFAULT_STEPS: ReplayStep[] = [
-  {
-    delayMs: 0,
-    frame: '/replay/driveway-car-passing.jpg',
-    note: 'Car driving past',
-    recorded: false,
-    vision: { vehiclePresent: true, stopped: false, colour: 'grey', vehicleType: 'hatchback', confidence: 0.85 },
-  },
-  {
-    delayMs: 4000,
-    frame: '/replay/lot-bays-clear.jpg',
-    note: 'Pickup bays clear',
-    recorded: false,
-    vision: { vehiclePresent: false, stopped: 'unclear', confidence: 0.9 },
-  },
-  { delayMs: 4000, frame: '/replay/lot-car-in-bay.jpg', note: 'Car stops in a bay', recorded: false, vision: CAR_IN_BAY },
-  { delayMs: 8000, frame: '/replay/lot-car-in-bay.jpg', note: 'Still waiting', recorded: false, vision: CAR_IN_BAY },
+  step(0, 'clear', 'Pickup bays clear'),
+  step(4000, 'car', 'Car stops in the pickup bay'),
+  step(7000, 'car', 'Still there, staff alerted'),
+  step(10_000, 'car', 'Still waiting'),
+  step(10_000, 'car', 'Still waiting'),
+  step(10_000, 'car', 'Still waiting'),
+  step(10_000, 'car', 'Still waiting'),
+  step(10_000, 'car', 'Still waiting'),
+  step(10_000, 'clear', 'Car drove off'),
 ]
