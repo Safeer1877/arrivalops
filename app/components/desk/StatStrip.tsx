@@ -33,7 +33,7 @@ export function StatStrip({ m }: { m: Metrics }) {
         hint={
           m.medianSecondsToAcknowledge === null
             ? 'Handed over after the camera spotted them'
-            : `Median ${clock(m.medianSecondsToAcknowledge)} from alert to staff outside`
+            : `Median ${clock(m.medianSecondsToAcknowledge)} from alert to staff confirmation`
         }
       />
       <Stat
