@@ -8,7 +8,7 @@ The full timestamped log from our Mac go/no-go and live runs (Ring Playground, B
 - **Task:** Trigger the pickup workflow from a Ring vehicle event.
 - **Steps:** Started the Developer Playground "Vehicle" simulation; listed event history for the device.
 - **Expected:** A `motion_detected` event (sub_type vehicle) or a webhook, as a real camera would send.
-- **Actual:** Other entrants report the simulations appear as `on_demand` live views (to be confirmed in our own run).
+- **Actual:** Confirmed on our Mac with the Ring Developer Playground Vehicle simulation: event history showed `on_demand` sessions rather than a `motion_detected` or vehicle event (see live-run entries #13 and #16 in `docs/FRICTION_LOG_MAC.md`).
 - **Severity:** Major for event-driven apps.
 - **Workaround:** Sample frames from the WHEP stream in the client, filter by scene change, and classify those.
 - **Suggestion:** Let the Playground emit signed sample webhooks (motion with vehicle/package sub_types) alongside each simulated stream.
