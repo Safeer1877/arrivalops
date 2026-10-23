@@ -24,7 +24,7 @@ Anyone (human or AI) with access to this repo can finish the entry from this fil
 
 ## What's left, in order
 
-1. **Video (under 3 min).** `video/arrivalops-demo.mp4` is a captioned screen recording of the replay flow plus the Bedrock check and the live screenshots. The voice-over script is `video/voiceover.md`. The owner records the voice-over, then uploads the video to YouTube (public or unlisted) and links it on Devpost.
+1. **Video (under 3 min).** Done: `video/arrivalops-demo.mp4` (2:13, captioned, no audio) and the voice-over script `video/voiceover.md`. The owner records the voice-over, merges it (any editor, or `ffmpeg -i video/arrivalops-demo.mp4 -i voice.m4a -c:v copy -c:a aac -shortest final.mp4`), uploads to YouTube and links it on Devpost.
 2. **Open Source mini challenge.** The PR draft for `AmazonAppDev/ring-api-helloworld` adds stalled-stream detection and a Reconnect button. The description and diff are in the project notes (`oss-pr-description.md`, `oss-pr-detect-stalled-stream.diff`). To open it: fork the sample, apply the diff on a branch `detect-stalled-stream`, and open the PR. **Only with the owner's OK.** Then link it on Devpost.
 3. **Make the repo public** (owner's OK).
 4. **Devpost form.** Use the text below. Add the screenshots `docs/screenshots/hd-3-alert.png`, `4-matched.png`, `7-missed.png`, `9-bay-moved-car-ignored.png` and `live-3a.png`.

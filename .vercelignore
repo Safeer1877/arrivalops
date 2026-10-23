@@ -2,3 +2,4 @@
 scripts/*.py
 scripts/requirements.txt
 FRICTION_LOG.md
+video/
