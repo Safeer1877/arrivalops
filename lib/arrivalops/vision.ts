@@ -10,7 +10,7 @@ import type { VisionResult } from './types'
 // Converse API with the usual AWS credential chain.
 const API_KEY = process.env.BEDROCK_API_KEY
 const MANTLE_URL = process.env.BEDROCK_MANTLE_URL || `https://bedrock-mantle.${process.env.AWS_REGION || 'us-east-1'}.api.aws/v1`
-export const MODEL_ID = process.env.BEDROCK_MODEL_ID || (API_KEY ? 'anthropic.claude-sonnet-5' : 'us.amazon.nova-lite-v1:0')
+export const MODEL_ID = process.env.BEDROCK_MODEL_ID || (API_KEY ? 'google.gemma-3-12b-it' : 'us.amazon.nova-lite-v1:0')
 const TIMEOUT_MS = Number(process.env.VISION_TIMEOUT_MS || 8000)
 
 const SYSTEM = `You check one still frame from a shop's outdoor camera that watches a curbside pickup bay.
@@ -52,12 +52,12 @@ export function parseReply(text: string, model: string, latencyMs: number): Visi
 
 let client: BedrockRuntimeClient | null = null
 
-async function askMantle(jpeg: Uint8Array, signal: AbortSignal): Promise<string> {
+async function askMantle(jpeg: Uint8Array, model: string, signal: AbortSignal): Promise<string> {
   const res = await fetch(`${MANTLE_URL}/chat/completions`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: MODEL_ID,
+      model,
       messages: [
         { role: 'system', content: SYSTEM },
         {
@@ -81,20 +81,20 @@ async function askMantle(jpeg: Uint8Array, signal: AbortSignal): Promise<string>
     )
   }
   const data = (await res.json()) as { choices?: { message?: { content?: string | null } }[] }
-  console.info(`[vision] Bedrock ${MODEL_ID} answered, request ${requestId}`)
+  console.info(`[vision] Bedrock ${model} answered, request ${requestId}`)
   return data.choices?.[0]?.message?.content ?? ''
 }
 
-export async function classifyFrame(jpeg: Uint8Array): Promise<VisionResult> {
+export async function classifyFrame(jpeg: Uint8Array, model = MODEL_ID): Promise<VisionResult> {
   const started = Date.now()
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), TIMEOUT_MS)
   try {
-    if (API_KEY) return parseReply(await askMantle(jpeg, abort.signal), MODEL_ID, Date.now() - started)
+    if (API_KEY) return parseReply(await askMantle(jpeg, model, abort.signal), model, Date.now() - started)
     client ??= new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' })
     const res = await client.send(
       new ConverseCommand({
-        modelId: MODEL_ID,
+        modelId: model,
         system: [{ text: SYSTEM }],
         messages: [
           {
@@ -107,7 +107,7 @@ export async function classifyFrame(jpeg: Uint8Array): Promise<VisionResult> {
       { abortSignal: abort.signal },
     )
     const text = res.output?.message?.content?.find((c) => 'text' in c && c.text)?.text ?? ''
-    return parseReply(text, MODEL_ID, Date.now() - started)
+    return parseReply(text, model, Date.now() - started)
   } catch (err) {
     const message = abort.signal.aborted
       ? `timed out after ${TIMEOUT_MS / 1000}s`
@@ -115,14 +115,14 @@ export async function classifyFrame(jpeg: Uint8Array): Promise<VisionResult> {
         ? 'model reply was not valid JSON'
         : err instanceof Error
           ? err.name === 'AccessDeniedException'
-            ? `no access to ${MODEL_ID}; enable it under Bedrock > Model access`
+            ? `no access to ${model}; enable it under Bedrock > Model access`
             : err.message
           : 'unknown error'
     return {
       vehiclePresent: 'unclear',
       stopped: 'unclear',
       confidence: 0,
-      model: MODEL_ID,
+      model: model,
       latencyMs: Date.now() - started,
       error: message,
     }

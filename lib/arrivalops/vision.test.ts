@@ -48,7 +48,7 @@ describe('classifyFrame with a Bedrock API key', () => {
     vi.stubGlobal('fetch', fetchMock)
     const { classifyFrame, MODEL_ID } = await import('./vision')
     const r = await classifyFrame(new Uint8Array([1, 2, 3]))
-    expect(MODEL_ID).toBe('anthropic.claude-sonnet-5')
+    expect(MODEL_ID).toBe('google.gemma-3-12b-it')
     expect(r).toMatchObject({ vehiclePresent: true, colour: 'grey', vehicleType: 'hatchback', model: MODEL_ID })
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect(url).toBe('https://bedrock-mantle.us-east-1.api.aws/v1/chat/completions')
