@@ -297,6 +297,8 @@ export function confirmMatch(state: State, caseId: string, orderId: string, ctx:
   const c = getCase(state, caseId)
   if (c.status !== 'needs_review') throw new ActionError(409, 'This case is already resolved')
   const o = getOrder(state, orderId)
+  if (!c.candidateOrderIds.includes(o.id)) throw new ActionError(409, 'Order is not a candidate for this case')
+  if (o.checkIn) throw new ActionError(409, `Order ${o.code} has already checked in`)
   if (o.handedOverAt) throw new ActionError(409, `Order ${o.code} was already handed over`)
   snapshot(state, `Match to #${o.code}`)
   c.status = 'matched'
