@@ -101,8 +101,11 @@ export default function Desk() {
   const active = view.cases.filter((c) => c.status === 'needs_review' || c.status === 'matched')
   const watching = view.cases.filter((c) => c.status === 'watching')
   const expanded = active.find((c) => c.id === expandedId && c.status === 'needs_review') ?? active.find((c) => c.status === 'needs_review')
-  // A customer who gave up in the last 15 minutes stays in the queue so someone can call them.
-  const missed = view.cases.find((c) => c.status === 'left' && c.resolvedAt && now - new Date(c.resolvedAt).getTime() < 15 * 60_000)
+  // A car that left after the alert in the last 15 minutes stays in the queue until staff say whether it was a
+  // customer, and then so someone can call them.
+  const missed = view.cases.find(
+    (c) => c.status === 'left' && c.departure !== 'not_a_customer' && c.resolvedAt && now - new Date(c.resolvedAt).getTime() < 15 * 60_000,
+  )
   const missedText = missed && view.activity.find((a) => a.kind === 'left' && a.caseId === missed.id)?.text
   const missedOrders = (missed?.candidateOrderIds ?? [])
     .map((id) => view.orders.find((o) => o.id === id))
@@ -251,6 +254,10 @@ export default function Desk() {
               ))}
               {missedText && (
                 <MissedCard
+                  caseId={missed.id}
+                  confirmed={missed.departure === 'missed'}
+                  busy={busy}
+                  act={act}
                   text={missedText}
                   orders={missedOrders}
                   obs={view.observations.find((o) => o.id === missed?.observationIds.at(-1))}

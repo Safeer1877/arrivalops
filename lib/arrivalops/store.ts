@@ -15,6 +15,7 @@ import {
   observe,
   posCheckIn,
   promote,
+  reviewDeparture,
   settingsOf,
   undo,
   updateSettings,
@@ -90,6 +91,7 @@ const Action = z.discriminatedUnion('action', [
   z.object({ action: z.literal('confirm'), caseId: z.string(), orderId: z.string() }),
   z.object({ action: z.literal('dismiss'), caseId: z.string(), reason: z.enum(['not_a_customer', 'already_served', 'false_detection']) }),
   z.object({ action: z.literal('hand_over'), orderId: z.string() }),
+  z.object({ action: z.literal('review_departure'), caseId: z.string(), verdict: z.enum(['missed', 'not_a_customer']) }),
   z.object({ action: z.literal('pos_check_in'), orderId: z.string() }),
   z.object({ action: z.literal('undo') }),
   z.object({
@@ -118,6 +120,9 @@ export function dispatch(input: unknown, ctx = ctxNow(), boardId = SHOP_BOARD) {
       break
     case 'dismiss':
       dismiss(state, a.caseId, a.reason, ctx)
+      break
+    case 'review_departure':
+      reviewDeparture(state, a.caseId, a.verdict, ctx)
       break
     case 'hand_over':
       handOver(state, a.orderId, ctx)

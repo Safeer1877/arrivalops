@@ -73,6 +73,8 @@ export interface ReviewCase {
   resolvedAt?: string
   dismissReason?: DismissReason
   chimeAnnouncedAt?: string
+  // A car that left after the alert is only a missed pickup once staff say so; the camera can't know.
+  departure?: 'missed' | 'not_a_customer'
 }
 
 export interface ActivityEntry {

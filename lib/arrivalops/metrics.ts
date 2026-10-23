@@ -10,7 +10,7 @@ export interface Metrics {
   rescuedToday: number // handed over after staff matched an unannounced arrival
   medianSecondsToAcknowledge: number | null // case opened -> staff matched it
   medianSecondsArrivalToHandover: number | null // car stopped -> order handed over
-  missedToday: number // alerted, and the car drove off before anyone came out
+  missedToday: number // alerted, the car drove off before anyone came out, and staff confirmed it was a customer
 }
 
 const sec = (a: string, b: string) => Math.max(0, (new Date(b).getTime() - new Date(a).getTime()) / 1000)
@@ -32,7 +32,7 @@ export function computeMetrics(state: State, now: Date): Metrics {
     valueAtRiskCents: atRisk.reduce((sum, o) => sum + o.totalCents, 0),
     ordersAtRisk: atRisk.length,
     openCases: state.cases.filter((c) => c.status === 'needs_review').length,
-    missedToday: today.filter((c) => c.status === 'left').length,
+    missedToday: today.filter((c) => c.status === 'left' && c.departure === 'missed').length,
     rescuedToday: handed.length,
     medianSecondsToAcknowledge: median(today.filter((c) => c.matchedAt).map((c) => sec(c.openedAt, c.matchedAt!))),
     medianSecondsArrivalToHandover: median(handed.map((c) => sec(c.firstSeenAt ?? c.openedAt, c.resolvedAt!))),

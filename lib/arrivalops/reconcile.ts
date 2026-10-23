@@ -16,6 +16,10 @@ export const SHOP_SETTINGS: DeskSettings = { zone: null, dwellSeconds: 60, callo
 export const settingsOf = (state: State): DeskSettings => state.settings ?? SHOP_SETTINGS
 
 const OPEN: ReviewCase['status'][] = ['watching', 'needs_review']
+// Staff hear about a car only when the camera has seen it at least twice, at least once confirmed standing still,
+// and recently: elapsed time since an old sighting is not the same as a car still waiting.
+const MIN_SIGHTINGS = 2
+export const FRESH_SIGHTING_MS = 30_000 // longer than the live sampler's 20 s heartbeat
 
 export interface Ctx {
   now: Date
@@ -136,7 +140,9 @@ function sameVisitHandled(state: State, obs: Observation): boolean {
 /** Alert staff about cars that have now been stopped in the bay for the dwell time. */
 export function promote(state: State, ctx: Ctx): ReviewCase[] {
   const { dwellSeconds } = settingsOf(state)
-  const promoted = state.cases.filter((c) => c.status === 'watching' && sinceSeconds(c.firstSeenAt, ctx.now) >= dwellSeconds)
+  const promoted = state.cases.filter(
+    (c) => c.status === 'watching' && sinceSeconds(c.firstSeenAt, ctx.now) >= dwellSeconds && stillWaiting(state, c, ctx.now),
+  )
   for (const c of promoted) {
     c.status = 'needs_review'
     c.openedAt = iso(ctx.now)
@@ -148,6 +154,15 @@ export function promote(state: State, ctx: Ctx): ReviewCase[] {
     })
   }
   return promoted
+}
+
+function stillWaiting(state: State, c: ReviewCase, now: Date): boolean {
+  const sightings = c.observationIds
+    .map((id) => state.observations.find((o) => o.id === id))
+    .filter((o): o is Observation => Boolean(o && o.vision.vehiclePresent !== false && !o.vision.error))
+  if (sightings.length < MIN_SIGHTINGS || !sightings.some((o) => o.vision.stopped === true)) return false
+  const latest = Math.max(...sightings.map((o) => ms(o.at)))
+  return now.getTime() - latest <= FRESH_SIGHTING_MS
 }
 
 /** Closes open sightings without counting a lost customer, e.g. when a demo replay is restarted part way. */
@@ -187,7 +202,7 @@ export function observe(state: State, obs: Observation, ctx: Ctx): ReviewCase | 
       open.resolvedAt = iso(ctx.now)
       log(state, ctx, {
         kind: 'left',
-        text: `${vehicleOf(state, open)} left without pickup after waiting ${clock(sinceSeconds(open.firstSeenAt, ctx.now))}`,
+        text: `${vehicleOf(state, open)} left after waiting ${clock(sinceSeconds(open.firstSeenAt, ctx.now))}, before anyone came out`,
         caseId: open.id,
       })
     } else if (open) {
@@ -285,7 +300,7 @@ export function confirmMatch(state: State, caseId: string, orderId: string, ctx:
   c.matchedOrderId = o.id
   c.matchedAt = iso(ctx.now)
   if (!o.checkIn) o.checkIn = { at: iso(ctx.now), source: 'staff_rescue' }
-  log(state, ctx, { kind: 'matched', text: `Matched to #${o.code} (${o.customer})`, caseId, orderId })
+  log(state, ctx, { kind: 'matched', text: `Staff confirmed #${o.code} (${o.customer}) with the driver`, caseId, orderId })
 }
 
 export function handOver(state: State, orderId: string, ctx: Ctx): void {
@@ -310,6 +325,19 @@ export function dismiss(state: State, caseId: string, reason: DismissReason, ctx
   c.dismissReason = reason
   c.resolvedAt = iso(ctx.now)
   log(state, ctx, { kind: 'dismissed', text: `Dismissed: ${reason.replace(/_/g, ' ')}`, caseId })
+}
+
+/** Staff say whether a car that left after the alert was a customer they missed. Only then does it count. */
+export function reviewDeparture(state: State, caseId: string, verdict: 'missed' | 'not_a_customer', ctx: Ctx): void {
+  const c = getCase(state, caseId)
+  if (c.status !== 'left' || c.departure) throw new ActionError(409, 'This departure was already reviewed')
+  snapshot(state, verdict === 'missed' ? 'Confirm missed pickup' : 'Not a customer')
+  c.departure = verdict
+  log(state, ctx, {
+    kind: verdict === 'missed' ? 'case_updated' : 'dismissed',
+    text: verdict === 'missed' ? 'Staff confirmed a missed pickup' : 'Staff said the car that left was not a customer',
+    caseId,
+  })
 }
 
 /** The customer checked in through the ordering system after all; take their order out of open cases. */

@@ -55,8 +55,8 @@ export function moved(a: Zone, b: Zone): boolean {
 /**
  * The bay's answer. The largest vehicle in the bay is the one that matters. It counts as stopped when some vehicle
  * was in that spot at the last look (the detector may pick a neighbouring parked car as the largest from one look to
- * the next, which is not movement). A first sighting counts as stopped; the dwell time before any alert filters out
- * cars that were only passing.
+ * the next, which is not movement). One look can't tell parked from passing, so a first sighting is "unclear"; staff
+ * are only alerted after repeated sightings with at least one confirmed stop (see promote in reconcile.ts).
  */
 export function judgeBay(detections: Detection[], zone: Zone | null, previous: Zone[] | null, latencyMs: number): VisionResult {
   const inside = detections.filter((d) => inBay(d, zone)).sort((a, b) => b.box.w * b.box.h - a.box.w * a.box.h)
@@ -64,7 +64,7 @@ export function judgeBay(detections: Detection[], zone: Zone | null, previous: Z
   if (!top) return { vehiclePresent: false, stopped: 'unclear', confidence: 0.9, model: DETECTOR_MODEL, latencyMs }
   return {
     vehiclePresent: top.score >= SURE_SCORE ? true : 'unclear',
-    stopped: previous?.length ? previous.some((p) => !moved(p, top.box)) : true,
+    stopped: previous?.length ? previous.some((p) => !moved(p, top.box)) : 'unclear',
     colour: top.colour,
     vehicleType: top.label,
     confidence: Math.round(top.score * 100) / 100,

@@ -53,7 +53,9 @@ export function CaseCard({ c, calloutSeconds, orders, observations, now, busy, a
     return (
       <article ref={ref} className="rounded-lg border border-emerald-300 bg-emerald-50/40 p-3 motion-safe:animate-case-in">
         <div className="flex items-center gap-2">
-          <span className="rounded bg-emerald-600 px-1.5 py-px text-[11px] font-semibold uppercase tracking-wide text-white">Matched</span>
+          <span className="rounded bg-emerald-600 px-1.5 py-px text-[11px] font-semibold uppercase tracking-wide text-white">
+            Staff confirmed
+          </span>
           <span className="text-xs text-slate-500">
             {vehicleLabel(obs)} · waiting {clock(waiting)}
           </span>

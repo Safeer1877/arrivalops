@@ -12,17 +12,17 @@ A takeaway has three orders ready. A car pulls into the pickup bay, but the driv
 |---|---|---|
 | 1. Watch | The pickup desk streams the shop's Ring camera and samples frames inside the pickup bay the owner marked on the picture, so cars parked elsewhere are ignored. Only changed answers are sent on, plus a slow heartbeat, following Ring's guidance to filter early. | Ring Partner API: device discovery, WHEP live video |
 | 2. Check | A vehicle detector runs in the staff browser every 3 seconds: is a vehicle in the bay, and has it moved since the last look? Coarse attributes only (body colour from pixels, car/truck/bus). When the AWS account allows it, Bedrock gives a second opinion on the bay crop with a strict JSON schema. Licence plates and people are never read. | COCO-SSD (SSDLite MobileNet v2, TensorFlow.js, model served by the app); optional Amazon Bedrock (Nova Lite, Converse API) |
-| 3. Reconcile | A stopped car is watched quietly first. Only if it is still there after the dwell time (1 minute by default) and some order due around now has no check-in do staff hear about it. Candidates include orders still being prepared, with the reason each one is listed ("Said ‘grey hatchback’", "Due 6 min ago", "Still preparing, ready in 8 min"). Repeat sightings fold into one case, and the activity feed records changes, not every frame. | `lib/arrivalops/reconcile.ts` |
+| 3. Reconcile | One look can't tell a parked car from a passing one, so a first sighting is only "watched". Staff hear about it only when the camera has seen it at least twice, standing still in the same place, has seen it within the last 30 seconds, it has been there for the dwell time (1 minute by default), and some order due around now has no check-in. Elapsed time alone never raises an alert. Candidates include orders still being prepared, with the reason each one is listed ("Said ‘grey hatchback’", "Due 6 min ago", "Still preparing, ready in 8 min"). Repeat sightings fold into one case, and the activity feed records changes, not every frame. | `lib/arrivalops/reconcile.ts` |
 | 4. Rescue | Staff see "Silver hatchback in the pickup bay · waiting 0:42" and up to three candidate orders, best guess first (for example, a customer who said "silver hatchback" at checkout). They confirm with the driver. ArrivalOps never contacts or identifies anyone on its own. | Staff desk (Next.js) |
 | 5. Call out | If nobody acts within 45 seconds, the counter tablet chimes and says "A car is waiting in the pickup bay with no check-in." | Web Audio + speech |
-| 6. Measure | Food going cold (value of overdue, unclaimed orders), cars rescued today, median alert-to-staff time, arrival-to-handover, and **Missed today**: a car that drives off after the alert with nobody coming out is recorded as a lost pickup and shown on the desk so someone can call the customer. | `lib/arrivalops/metrics.ts` |
+| 6. Measure | Uncollected, overdue (the sale value of ready orders past pickup time with no check-in: money on the shelf, not a measured loss), cars rescued today, median alert-to-staff time, arrival-to-handover, and **Missed today**: a car that drives off after the alert is shown as "left before anyone came out", and counts as a missed pickup only when staff confirm it was a customer. | `lib/arrivalops/metrics.ts` |
 
 Every staff action can be undone, settings (bay, dwell, call-out delay) are per shop, and a customer who checks in late through the app closes the case automatically.
 
 ## Why it matters
 
 - Pickup and curbside are now a normal part of restaurant and retail sales, and every one of those businesses runs on the assumption that customers announce themselves.
-- When they don't, the cost is concrete: food remade or thrown away, a refund, a one-star review, and a lost regular. The "Food going cold" tile puts a number on it every minute of the day.
+- When they don't, the cost is concrete: food remade or thrown away, a refund, a one-star review, and a lost regular. The "Uncollected, overdue" tile shows the sale value sitting on the shelf at any moment.
 - The shop already owns the camera. ArrivalOps turns a security device into an operations tool without new hardware, which suits small shops that will never buy a dedicated license-plate system.
 
 ## Try it
@@ -72,7 +72,8 @@ Staff desk (browser): on-device detector (COCO-SSD) on the marked bay
                                                   ▼
                                     reconcile: waiting car × due orders without check-in
                                                   │
-                     needs review ─▶ matched ─▶ handed over   (or dismissed / closed by late check-in)
+          needs review ─▶ staff confirm the order with the driver ─▶ handed over   (or dismissed / closed by late check-in)
+                     └─ car leaves ─▶ "left before anyone came out" ─▶ staff: missed pickup, or not a customer
                                                   │
                                          metrics + activity log
 ```

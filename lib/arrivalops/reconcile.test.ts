@@ -10,6 +10,7 @@ import {
   observe,
   posCheckIn,
   promote,
+  reviewDeparture,
   updateSettings,
   undo,
   type Ctx,
@@ -54,6 +55,12 @@ function obs(min: number, vision: Partial<Observation['vision']> = {}, deviceId 
   }
 }
 
+// A car the camera sees twice, 15 s apart, standing still: the least it takes to alert staff.
+function arrive(min: number) {
+  observe(state, obs(min - 0.25), ctx(min - 0.25))
+  return observe(state, obs(min), ctx(min))!
+}
+
 let state: State
 beforeEach(() => {
   n = 0
@@ -68,7 +75,7 @@ beforeEach(() => {
 
 describe('observe', () => {
   it('opens a case with due orders only, customer vehicle hint first', () => {
-    const c = observe(state, obs(1), ctx(1))!
+    const c = arrive(1)
     expect(c.status).toBe('needs_review')
     expect(c.candidateOrderIds).toEqual(['o1047', 'o1042']) // o1050 is 90 min away and not ready
   })
@@ -110,7 +117,7 @@ describe('observe', () => {
   it('logs when an unsure sighting is confirmed as a vehicle', () => {
     observe(state, obs(1, { vehiclePresent: 'unclear', colour: undefined }), ctx(1))
     observe(state, obs(2), ctx(2))
-    expect(state.activity[0].text).toBe('Silver hatchback confirmed in the bay')
+    expect(state.activity.map((a) => a.text)).toContain('Silver hatchback confirmed in the bay')
   })
 
   it('counts a repeated camera error on one line and says Bedrock is not enabled', () => {
@@ -141,10 +148,27 @@ describe('dwell and departures', () => {
     expect(state.activity[0].text).toMatch(/waiting 1:01 with no check-in/)
   })
 
-  it('promotes on the clock too, between sightings', () => {
+  it('promotes on the clock too, between sightings, while the last sighting is recent', () => {
     const c = observe(state, seen(0), sec(0))!
+    observe(state, seen(50), sec(50))
     promote(state, sec(65))
     expect(c.status).toBe('needs_review')
+  })
+
+  it('never alerts on elapsed time alone: one old sighting is not a car still waiting', () => {
+    const c = observe(state, seen(0), sec(0))!
+    promote(state, sec(65))
+    expect(c.status).toBe('watching')
+    observe(state, seen(10), sec(10))
+    promote(state, sec(70)) // last seen 60 s ago
+    expect(c.status).toBe('watching')
+  })
+
+  it('needs a confirmed stop, not just two sightings of a car the detector could not call', () => {
+    const c = observe(state, seen(0, { stopped: 'unclear' }), sec(0))!
+    observe(state, seen(55, { stopped: 'unclear' }), sec(55))
+    promote(state, sec(65))
+    expect(c.status).toBe('watching')
   })
 
   it('logs changes, not every frame that looks the same', () => {
@@ -181,17 +205,31 @@ describe('dwell and departures', () => {
     expect(computeMetrics(state, sec(20).now).missedToday).toBe(0)
   })
 
-  it('counts a car that drives off after the alert as a lost customer', () => {
+  it('records a departure after the alert, but only counts a missed pickup once staff confirm it', () => {
     const c = observe(state, seen(0), sec(0))!
+    observe(state, seen(50), sec(50))
     promote(state, sec(61))
     observe(state, seen(90, { vehiclePresent: false }), sec(90))
     expect(c.status).toBe('left')
-    expect(state.activity[0].text).toBe('Silver hatchback left without pickup after waiting 1:30')
-    expect(computeMetrics(state, sec(90).now).missedToday).toBe(1)
+    expect(state.activity[0].text).toBe('Silver hatchback left after waiting 1:30, before anyone came out')
+    expect(computeMetrics(state, sec(90).now).missedToday).toBe(0)
+    reviewDeparture(state, c.id, 'missed', sec(95))
+    expect(computeMetrics(state, sec(95).now).missedToday).toBe(1)
+    expect(() => reviewDeparture(state, c.id, 'not_a_customer', sec(96))).toThrow(ActionError)
+  })
+
+  it('does not count a departure staff say was not a customer', () => {
+    const c = observe(state, seen(0), sec(0))!
+    observe(state, seen(50), sec(50))
+    promote(state, sec(61))
+    observe(state, seen(90, { vehiclePresent: false }), sec(90))
+    reviewDeparture(state, c.id, 'not_a_customer', sec(95))
+    expect(computeMetrics(state, sec(95).now).missedToday).toBe(0)
   })
 
   it('leaves a matched case alone when the bay clears, so staff still record the handover', () => {
     const c = observe(state, seen(0), sec(0))!
+    observe(state, seen(50), sec(50))
     promote(state, sec(61))
     confirmMatch(state, c.id, 'o1047', sec(70))
     observe(state, seen(80, { vehiclePresent: false }), sec(80))
@@ -213,7 +251,7 @@ describe('candidates', () => {
 
 describe('staff workflow', () => {
   it('match, hand over, and measure', () => {
-    const c = observe(state, obs(1), ctx(1))!
+    const c = arrive(1)
     confirmMatch(state, c.id, 'o1047', ctx(2))
     expect(state.orders[1].checkIn?.source).toBe('staff_rescue')
     handOver(state, 'o1047', ctx(4))
@@ -221,18 +259,18 @@ describe('staff workflow', () => {
     const m = computeMetrics(state, at(4))
     expect(m.rescuedToday).toBe(1)
     expect(m.medianSecondsToAcknowledge).toBe(60)
-    expect(m.medianSecondsArrivalToHandover).toBe(180)
+    expect(m.medianSecondsArrivalToHandover).toBe(195) // first seen 15 s before the alert
   })
 
   it('rejects double resolution and unknown ids', () => {
-    const c = observe(state, obs(1), ctx(1))!
+    const c = arrive(1)
     dismiss(state, c.id, 'not_a_customer', ctx(2))
     expect(() => confirmMatch(state, c.id, 'o1042', ctx(3))).toThrow(ActionError)
     expect(() => handOver(state, 'nope', ctx(3))).toThrow(/not found/)
   })
 
   it('undo restores the previous state', () => {
-    const c = observe(state, obs(1), ctx(1))!
+    const c = arrive(1)
     confirmMatch(state, c.id, 'o1042', ctx(2))
     expect(undo(state, ctx(3))).toBe('Match to #1042')
     expect(state.cases[0].status).toBe('needs_review')
@@ -241,14 +279,14 @@ describe('staff workflow', () => {
   })
 
   it('a late app check-in closes the case it explains', () => {
-    const c = observe(state, obs(1), ctx(1))!
+    const c = arrive(1)
     posCheckIn(state, 'o1042', ctx(2))
     posCheckIn(state, 'o1047', ctx(2))
     expect(state.cases.find((x) => x.id === c.id)?.status).toBe('dismissed')
   })
 
   it('announces on the chime only after 45 s without action', () => {
-    observe(state, obs(1), ctx(1))
+    arrive(1)
     expect(casesToAnnounce(state, new Date(at(1).getTime() + 30_000))).toHaveLength(0)
     expect(casesToAnnounce(state, new Date(at(1).getTime() + 46_000))).toHaveLength(1)
   })

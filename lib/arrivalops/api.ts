@@ -46,7 +46,7 @@ export function postReplay(boardId: string, step: unknown): ApiResult {
   if (!s) return { status: 400, body: { error: 'Unknown replay step' } }
   const n = step === 'leave' ? -1 : (step as number)
   if (n === 0) restartReplay(ctxNow(), boardId)
-  const vision = answerFor(s, settingsOf(getState(boardId)).zone)
+  const vision = answerFor(s, settingsOf(getState(boardId)).zone, n > 0 ? DEFAULT_STEPS[n - 1] : undefined)
   const carFrame = s !== DRIVE_OFF && n !== 0
   const result = recordObservation({ ...REPLAY_DEVICE, source: 'replay', frame: s.frame }, vision, ctxNow(), boardId)
   const next = step === 'leave' ? undefined : DEFAULT_STEPS[n + 1]

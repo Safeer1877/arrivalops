@@ -1,0 +1,4 @@
+# The Python helpers in scripts/ come from Amazon's sample and are run by hand; the deployed app is Next.js only.
+scripts/*.py
+scripts/requirements.txt
+FRICTION_LOG.md

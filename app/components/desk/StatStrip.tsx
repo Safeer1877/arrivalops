@@ -22,10 +22,10 @@ export function StatStrip({ m }: { m: Metrics }) {
         hint="Cars in the pickup bay that staff have been alerted about"
       />
       <Stat
-        label="Food going cold"
+        label="Uncollected, overdue"
         value={money(m.valueAtRiskCents)}
         tone={m.valueAtRiskCents ? 'rose' : undefined}
-        hint={`${m.ordersAtRisk} ready order${m.ordersAtRisk === 1 ? '' : 's'} past pickup time with no check-in`}
+        hint={`Sale value of ${m.ordersAtRisk} ready order${m.ordersAtRisk === 1 ? '' : 's'} past pickup time with no check-in. Money on the shelf, not a measured loss.`}
       />
       <Stat
         label="Rescued today"
@@ -40,7 +40,7 @@ export function StatStrip({ m }: { m: Metrics }) {
         label="Missed today"
         value={String(m.missedToday)}
         tone={m.missedToday ? 'rose' : undefined}
-        hint="Drove off after the alert before anyone came out"
+        hint="Drove off after the alert before anyone came out, and staff confirmed it was a customer"
       />
     </div>
   )

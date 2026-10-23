@@ -26,6 +26,7 @@ describe('dispatch', () => {
   it('runs the whole rescue on the seeded demo shop', () => {
     dispatch({ action: 'reset' }, ctx())
     dispatch({ action: 'settings', dwellSeconds: 0 }, ctx())
+    recordObservation({ deviceId: 'cam', source: 'synthetic' }, vision, ctx()) // seen twice before anyone is alerted
     const { caseId, view } = recordObservation({ deviceId: 'cam', source: 'synthetic' }, vision, ctx())
     expect(caseId).not.toBeNull()
     expect(view.metrics.openCases).toBe(1)
@@ -42,6 +43,7 @@ describe('boards', () => {
     dispatch({ action: 'reset' }, ctx(), 'visitor-a')
     dispatch({ action: 'settings', dwellSeconds: 0 }, ctx(), 'visitor-a')
     dispatch({ action: 'reset' }, ctx(), 'visitor-b')
+    recordObservation({ deviceId: 'cam', source: 'synthetic' }, vision, ctx(), 'visitor-a')
     const a = recordObservation({ deviceId: 'cam', source: 'synthetic' }, vision, ctx(), 'visitor-a')
     expect(a.view.metrics.openCases).toBe(1)
     expect(getState('visitor-b').cases).toHaveLength(0)

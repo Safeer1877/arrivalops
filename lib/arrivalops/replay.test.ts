@@ -16,10 +16,11 @@ describe('replay recording', () => {
     const ctx = (advance = 0) => ({ now: new Date(t0 + (clock += advance)), id: (p: string) => `${p}_${clock}_${Math.random()}` })
     dispatch({ action: 'reset' }, ctx(), 'replay-test')
     let last
-    for (const s of DEFAULT_STEPS.slice(0, upTo)) {
+    for (let i = 0; i < upTo; i++) {
+      const s = DEFAULT_STEPS[i]
       last = recordObservation(
         { ...REPLAY_DEVICE, source: 'replay', frame: s.frame },
-        answerFor(s, DEMO_SETTINGS.zone),
+        answerFor(s, DEMO_SETTINGS.zone, DEFAULT_STEPS[i - 1]),
         ctx(s.delayMs),
         'replay-test',
       )
@@ -49,7 +50,8 @@ describe('replay recording', () => {
       'replay-test',
     ).view
     expect(view.cases[0].status).toBe('left')
-    expect(view.metrics.missedToday).toBe(1)
+    // The camera only saw the car go; whether it was a lost customer is the staff's call.
+    expect(view.metrics.missedToday).toBe(0)
   })
 
   it('clears a half-played run when the replay starts again, without counting a missed pickup', () => {
@@ -69,8 +71,10 @@ describe('replay recording', () => {
   })
 
   it('answers from what the detector really found on each frame', () => {
-    const car = answerFor(DEFAULT_STEPS[1], DEMO_SETTINGS.zone)
+    const car = answerFor(DEFAULT_STEPS[2], DEMO_SETTINGS.zone, DEFAULT_STEPS[1])
     expect(car).toMatchObject({ vehiclePresent: true, stopped: true, colour: 'grey', vehicleType: 'car' })
+    // One look can't tell parked from passing.
+    expect(answerFor(DEFAULT_STEPS[1], DEMO_SETTINGS.zone, DEFAULT_STEPS[0]).stopped).toBe('unclear')
     expect(car.model).toMatch(/COCO-SSD.*recorded/)
     expect(car.confidence).toBeGreaterThan(0.6)
     // The cars parked at the back of the lot are seen, but they are outside the pickup bay.

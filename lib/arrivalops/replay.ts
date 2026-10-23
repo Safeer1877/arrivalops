@@ -3,7 +3,7 @@
 // clip never shows a car pulling in and waiting, so the order and timing of these frames are staged; the
 // desk says so. It lets judges and visitors try ArrivalOps without a Ring token.
 
-import { judgeBay, type Detection } from './detector'
+import { inBay, judgeBay, type Detection } from './detector'
 import recorded from './replayDetections.json'
 import type { VisionResult, Zone } from './types'
 
@@ -46,11 +46,13 @@ export const DEFAULT_STEPS: ReplayStep[] = [
 export const DRIVE_OFF: ReplayStep = step(0, 'clear', 'Nobody came out, so the driver left')
 
 /**
- * The detector's answer for this step, seen through the marked bay. The frames are stills, so a vehicle seen
- * on the step before is in the same place: it counts as stopped, exactly as a parked car on the live feed does.
+ * The detector's answer for this step, seen through the marked bay, judged against the step before exactly as the
+ * live desk judges one look against the last: a car first seen is "unclear", and counts as stopped once a second
+ * look finds it in the same place.
  */
-export function answerFor(s: ReplayStep, zone: Zone | null): VisionResult {
+export function answerFor(s: ReplayStep, zone: Zone | null, before?: ReplayStep): VisionResult {
   const f = RECORDED.frames[s.frame]
-  const v = judgeBay(f?.vehicles ?? [], zone, null, f?.latencyMs ?? 0)
+  const previous = before ? (RECORDED.frames[before.frame]?.vehicles ?? []).filter((d) => inBay(d, zone)).map((d) => d.box) : null
+  const v = judgeBay(f?.vehicles ?? [], zone, previous, f?.latencyMs ?? 0)
   return { ...v, model: `${RECORDED.model} (recorded)` }
 }
