@@ -21,7 +21,7 @@ const ROWS: Array<[string, string]> = [
   ],
   [
     'Pickup workflow',
-    'Candidate ranking, exception handling, staff verification, undo, and metrics use the application\'s real reconciliation logic. Spoken call-outs play on the staff device, not a Ring Chime.',
+    "Candidate ranking, exception handling, staff verification, undo, and metrics use the application's real reconciliation logic. Spoken call-outs play on the staff device, not a Ring Chime.",
   ],
 ]
 
