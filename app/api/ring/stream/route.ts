@@ -3,6 +3,10 @@ import { getAccessToken } from '@/lib/auth'
 
 const API_BASE = 'https://api.amazonvision.com'
 
+// WHEP session URLs stay on the server; the browser only gets an opaque id to close the session with, so a
+// caller can never make the server send the Ring token to a URL of its choosing.
+const sessions = new Map<string, string>()
+
 export async function POST(request: NextRequest) {
   try {
     const { sdpOffer, deviceId } = await request.json()
@@ -41,9 +45,13 @@ export async function POST(request: NextRequest) {
     }
 
     const sdpAnswer = await response.text()
-    const sessionUrl = response.headers.get('Location')
+    const location = response.headers.get('Location')
+    const sessionUrl = location ? new URL(location, API_BASE).toString() : null
+    // The URL came from Ring's own response, never from the browser.
+    const sessionId = sessionUrl ? crypto.randomUUID() : null
+    if (sessionId && sessionUrl) sessions.set(sessionId, sessionUrl)
 
-    return NextResponse.json({ sdpAnswer, sessionUrl })
+    return NextResponse.json({ sdpAnswer, sessionId })
   } catch (error) {
     console.error('Stream error:', error)
     return NextResponse.json(
@@ -55,10 +63,12 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { sessionUrl } = await request.json()
+    const { sessionId } = await request.json()
+    const sessionUrl = typeof sessionId === 'string' ? sessions.get(sessionId) : undefined
     if (!sessionUrl) {
-      return NextResponse.json({ error: 'Missing sessionUrl' }, { status: 400 })
+      return NextResponse.json({ error: 'Unknown session' }, { status: 404 })
     }
+    sessions.delete(sessionId)
 
     const token = await getAccessToken()
     await fetch(sessionUrl, {
