@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { parseReply } from './vision'
+import { combine, parseReply } from './vision'
 
 describe('parseReply', () => {
   it('accepts a clean reply', () => {
@@ -70,5 +70,42 @@ describe('classifyFrame with a Bedrock API key', () => {
     expect(r.error).toMatch(/key refused/)
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
+  })
+})
+
+describe('combine', () => {
+  const det = {
+    vehiclePresent: true,
+    stopped: true,
+    colour: 'grey',
+    vehicleType: 'car',
+    confidence: 0.7,
+    model: 'COCO-SSD on-device',
+    latencyMs: 5,
+  } as const
+  const bed = {
+    vehiclePresent: true,
+    stopped: 'unclear',
+    colour: 'black',
+    vehicleType: 'suv',
+    confidence: 0.95,
+    model: 'google.gemma-3-12b-it',
+    latencyMs: 3000,
+  } as const
+
+  it('keeps the detector answer and notes that Bedrock agreed', () => {
+    expect(combine(det, bed)).toMatchObject({
+      vehiclePresent: true,
+      stopped: true,
+      colour: 'grey',
+      vehicleType: 'car',
+      model: 'COCO-SSD on-device, Bedrock gemma-3-12b-it agreed',
+    })
+  })
+
+  it('never lets Bedrock alone raise an alert', () => {
+    const r = combine({ ...det, vehiclePresent: false }, bed)
+    expect(r.vehiclePresent).toBe(false)
+    expect(r.model).toContain('disagreed')
   })
 })

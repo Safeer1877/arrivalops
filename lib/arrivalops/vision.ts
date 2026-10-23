@@ -163,6 +163,15 @@ export async function classifyLive(jpeg: Uint8Array, onDevice?: VisionResult, no
     return onDevice
   }
   bedrockError = undefined
-  // Bedrock sees one still, so whether the car moved comes from the detector, which compares looks.
-  return { ...b, stopped: b.stopped === 'unclear' ? onDevice.stopped : b.stopped, box: onDevice.box }
+  return combine(onDevice, b)
+}
+
+/**
+ * The detector decides; Bedrock checks it. Bedrock's answer is recorded in the model line as agreeing or
+ * disagreeing, but never changes whether a car is there, whether it stopped, or its colour, so Bedrock alone can
+ * never raise or clear an alert. (In testing, Gemma 3 called a grey hatchback a black SUV at 95% confidence.)
+ */
+export function combine(onDevice: VisionResult, b: VisionResult): VisionResult {
+  const verdict = b.vehiclePresent === onDevice.vehiclePresent ? 'agreed' : 'disagreed'
+  return { ...onDevice, model: `${onDevice.model}, Bedrock ${b.model.replace(/^[a-z]+\./, '')} ${verdict}` }
 }
