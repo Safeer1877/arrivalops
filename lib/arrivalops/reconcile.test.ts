@@ -262,6 +262,20 @@ describe('staff workflow', () => {
     expect(m.medianSecondsArrivalToHandover).toBe(195) // first seen 15 s before the alert
   })
 
+  it('does not confirm an unrelated or already checked-in order', () => {
+    const c = arrive(1)
+    // Order o1050 is outside the pickup window and is not shown on this case.
+    expect(c.candidateOrderIds).not.toContain('o1050')
+    expect(() => confirmMatch(state, c.id, 'o1050', ctx(2))).toThrow(/not a candidate/)
+    expect(state.orders[2].checkIn).toBeUndefined()
+    expect(c.status).toBe('needs_review')
+
+    // A check-in from the ordering system makes that order ineligible for rescue.
+    posCheckIn(state, 'o1047', ctx(2))
+    expect(() => confirmMatch(state, c.id, 'o1047', ctx(3))).toThrow(/not a candidate|already checked in/)
+    expect(c.status).toBe('needs_review')
+  })
+
   it('rejects double resolution and unknown ids', () => {
     const c = arrive(1)
     dismiss(state, c.id, 'not_a_customer', ctx(2))
