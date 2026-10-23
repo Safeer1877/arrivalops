@@ -2,6 +2,8 @@
 
 Format per entry: task · steps · expected vs actual · severity · workaround · suggestion.
 
+The full timestamped log from our Mac go/no-go and live runs (Ring Playground, Bedrock, app checks) is in [docs/FRICTION_LOG_MAC.md](docs/FRICTION_LOG_MAC.md).
+
 ## 1. Playground simulations don't produce motion events
 - **Task:** Trigger the pickup workflow from a Ring vehicle event.
 - **Steps:** Started the Developer Playground "Vehicle" simulation; listed event history for the device.
