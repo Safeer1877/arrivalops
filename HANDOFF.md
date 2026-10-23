@@ -7,6 +7,7 @@ Anyone (human or AI) with access to this repo can finish the entry from this fil
 - **Hackathon:** Amazon "Build, Ship, Shape" on Devpost. **Deadline 2026-10-24 00:00 PKT (GMT+5)**. Aim to submit by 20:00 PKT on Oct 23.
 - **Tracks:** Ring track, plus the AWS Builder and Open Source mini challenges.
 - **Pitch:** Ring-powered pickup exception desk. "The order is ready. The customer is outside. But nobody checked in."
+- **Video:** https://youtu.be/xVGru7-7Pkk
 - **Hosted demo:** https://arrivalops.vercel.app. It runs the replay demo entirely in the visitor's browser: each visitor gets their own board, kept in localStorage, and no keys are bundled.
 - **Repo:** https://github.com/Safeer1877/arrivalops. It is **private**, and the owner must make it public before submitting. Only do that with the owner's OK.
 
@@ -24,7 +25,7 @@ Anyone (human or AI) with access to this repo can finish the entry from this fil
 
 ## What's left, in order
 
-1. **Video (under 3 min).** Done: `video/arrivalops-demo.mp4` (2:13, captioned, no audio) and the voice-over script `video/voiceover.md`. The owner records the voice-over, merges it (any editor, or `ffmpeg -i video/arrivalops-demo.mp4 -i voice.m4a -c:v copy -c:a aac -shortest final.mp4`), uploads to YouTube and links it on Devpost.
+1. **Video.** Done and uploaded: https://youtu.be/xVGru7-7Pkk (with voice-over and music). The source is `video/arrivalops-demo.mp4`, with the script in `video/voiceover.md`.
 2. **Open Source mini challenge.** The PR draft for `AmazonAppDev/ring-api-helloworld` adds stalled-stream detection and a Reconnect button. The description and diff are in the project notes (`oss-pr-description.md`, `oss-pr-detect-stalled-stream.diff`). To open it: fork the sample, apply the diff on a branch `detect-stalled-stream`, and open the PR. **Only with the owner's OK.** Then link it on Devpost.
 3. **Make the repo public** (owner's OK).
 4. **Devpost form.** Use the text below. Add the screenshots `docs/screenshots/hd-3-alert.png`, `4-matched.png`, `7-missed.png`, `9-bay-moved-car-ignored.png` and `live-3a.png`.
