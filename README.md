@@ -43,7 +43,8 @@ npm test                       # reconciliation, vision parsing and API tests
 | `RING_ACCESS_TOKEN` | Token from the [Ring Developer Playground](https://developer.amazon.com/ring/console/playground). Switches the desk to **Live** mode. |
 | `AWS_REGION`, AWS credentials | Optional. Bedrock second opinion for live frames (default region `us-east-1`). Without them the on-device detector does the job alone. |
 | `VISION_PROVIDER` | `on-device` to never call Bedrock. Unset: Bedrock is tried with the usual AWS credential chain, and the detector's answer is used whenever Bedrock refuses or is unreachable (Bedrock then rests for 10 minutes). |
-| `BEDROCK_MODEL_ID` | Defaults to `us.amazon.nova-lite-v1:0`. |
+| `BEDROCK_API_KEY` | Optional. A Bedrock API key (Bedrock console > API keys). When set, frames go to Bedrock's OpenAI-compatible `bedrock-mantle` endpoint instead of the Converse API. Keep it in `.env.local`, never in git. |
+| `BEDROCK_MODEL_ID` | Defaults to `anthropic.claude-sonnet-5` with an API key, `us.amazon.nova-lite-v1:0` without. |
 | `ARRIVALOPS_DATA_DIR` | Optional folder to persist the board across restarts. |
 | `NEXT_PUBLIC_ARRIVALOPS_IN_BROWSER` | `1` runs the replay demo entirely in the visitor's browser (set automatically on Vercel). Live Ring mode needs the server, so leave it unset there. |
 | `NEXT_PUBLIC_SHOP_NAME`, `NEXT_PUBLIC_CURRENCY` | Branding for the desk. |

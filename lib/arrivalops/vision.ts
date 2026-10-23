@@ -6,7 +6,11 @@ import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-r
 import { z } from 'zod'
 import type { VisionResult } from './types'
 
-export const MODEL_ID = process.env.BEDROCK_MODEL_ID || 'us.amazon.nova-lite-v1:0'
+// With a Bedrock API key the frame goes to Bedrock's OpenAI-compatible endpoint (bedrock-mantle); otherwise to the
+// Converse API with the usual AWS credential chain.
+const API_KEY = process.env.BEDROCK_API_KEY
+const MANTLE_URL = process.env.BEDROCK_MANTLE_URL || `https://bedrock-mantle.${process.env.AWS_REGION || 'us-east-1'}.api.aws/v1`
+export const MODEL_ID = process.env.BEDROCK_MODEL_ID || (API_KEY ? 'anthropic.claude-sonnet-5' : 'us.amazon.nova-lite-v1:0')
 const TIMEOUT_MS = Number(process.env.VISION_TIMEOUT_MS || 8000)
 
 const SYSTEM = `You check one still frame from a shop's outdoor camera that watches a curbside pickup bay.
@@ -48,12 +52,46 @@ export function parseReply(text: string, model: string, latencyMs: number): Visi
 
 let client: BedrockRuntimeClient | null = null
 
+async function askMantle(jpeg: Uint8Array, signal: AbortSignal): Promise<string> {
+  const res = await fetch(`${MANTLE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: MODEL_ID,
+      messages: [
+        { role: 'system', content: SYSTEM },
+        {
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${Buffer.from(jpeg).toString('base64')}` } },
+            { type: 'text', text: 'Is a vehicle waiting in the pickup bay?' },
+          ],
+        },
+      ],
+      max_tokens: 300,
+      temperature: 0,
+    }),
+    signal,
+  })
+  const requestId = res.headers.get('x-amzn-requestid')
+  if (!res.ok) {
+    const body = (await res.text()).slice(0, 200)
+    throw new Error(
+      res.status === 401 || res.status === 403 ? `Bedrock API key refused (${res.status}): ${body}` : `Bedrock ${res.status}: ${body}`,
+    )
+  }
+  const data = (await res.json()) as { choices?: { message?: { content?: string | null } }[] }
+  console.info(`[vision] Bedrock ${MODEL_ID} answered, request ${requestId}`)
+  return data.choices?.[0]?.message?.content ?? ''
+}
+
 export async function classifyFrame(jpeg: Uint8Array): Promise<VisionResult> {
   const started = Date.now()
-  client ??= new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' })
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), TIMEOUT_MS)
   try {
+    if (API_KEY) return parseReply(await askMantle(jpeg, abort.signal), MODEL_ID, Date.now() - started)
+    client ??= new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' })
     const res = await client.send(
       new ConverseCommand({
         modelId: MODEL_ID,
@@ -120,7 +158,7 @@ export async function classifyLive(jpeg: Uint8Array, onDevice?: VisionResult, no
   const b = await classifyFrame(jpeg)
   if (b.error) {
     bedrockError = b.error
-    const refused = /not allowed|no access|denied|not authori[sz]ed|credential|security token/i.test(b.error)
+    const refused = /not allowed|no access|denied|not authori[sz]ed|credential|security token|key refused/i.test(b.error)
     bedrockRestingUntil = now + (refused ? REST_AFTER_REFUSAL_MS : REST_AFTER_FAILURE_MS)
     return onDevice
   }

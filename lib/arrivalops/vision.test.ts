@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { parseReply } from './vision'
 
 describe('parseReply', () => {
@@ -27,5 +27,48 @@ describe('parseReply', () => {
   it('throws on malformed replies so the caller can fall back', () => {
     expect(() => parseReply('no json here', 'm', 1)).toThrow()
     expect(() => parseReply('{"vehicle_present":"maybe","stopped":"yes","confidence":2}', 'm', 1)).toThrow()
+  })
+})
+
+describe('classifyFrame with a Bedrock API key', () => {
+  it('asks the bedrock-mantle endpoint and parses the reply', async () => {
+    vi.resetModules()
+    vi.stubEnv('BEDROCK_API_KEY', 'test-key')
+    vi.stubEnv('BEDROCK_MODEL_ID', '')
+    const fetchMock = vi.fn(async () =>
+      Response.json(
+        {
+          choices: [
+            { message: { content: '{"vehicle_present":"yes","stopped":"yes","colour":"grey","type":"hatchback","confidence":0.9}' } },
+          ],
+        },
+        { headers: { 'x-amzn-requestid': 'req_1' } },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const { classifyFrame, MODEL_ID } = await import('./vision')
+    const r = await classifyFrame(new Uint8Array([1, 2, 3]))
+    expect(MODEL_ID).toBe('anthropic.claude-sonnet-5')
+    expect(r).toMatchObject({ vehiclePresent: true, colour: 'grey', vehicleType: 'hatchback', model: MODEL_ID })
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('https://bedrock-mantle.us-east-1.api.aws/v1/chat/completions')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer test-key')
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('reports a refused key as an error, not a guess', async () => {
+    vi.resetModules()
+    vi.stubEnv('BEDROCK_API_KEY', 'expired')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{"message":"expired"}', { status: 401 })),
+    )
+    const { classifyFrame } = await import('./vision')
+    const r = await classifyFrame(new Uint8Array([1]))
+    expect(r.vehiclePresent).toBe('unclear')
+    expect(r.error).toMatch(/key refused/)
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
   })
 })
