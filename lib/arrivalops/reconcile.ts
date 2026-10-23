@@ -259,7 +259,10 @@ export function observe(state: State, obs: Observation, ctx: Ctx): ReviewCase | 
     openedAt: iso(ctx.now),
   }
   state.cases.unshift(c)
-  log(state, ctx, { kind: 'observation', text: `${describeVehicle(obs)} stopped in the bay` })
+  log(state, ctx, {
+    kind: 'observation',
+    text: `${describeVehicle(obs)} ${obs.vision.stopped === true ? 'stopped in the bay' : 'in the bay, checking whether it has stopped'}`,
+  })
   promote(state, ctx)
   return c
 }

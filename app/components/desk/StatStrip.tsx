@@ -22,7 +22,7 @@ export function StatStrip({ m }: { m: Metrics }) {
         hint="Cars in the pickup bay that staff have been alerted about"
       />
       <Stat
-        label="Uncollected, overdue"
+        label="Uncollected value"
         value={money(m.valueAtRiskCents)}
         tone={m.valueAtRiskCents ? 'rose' : undefined}
         hint={`Sale value of ${m.ordersAtRisk} ready order${m.ordersAtRisk === 1 ? '' : 's'} past pickup time with no check-in. Money on the shelf, not a measured loss.`}
