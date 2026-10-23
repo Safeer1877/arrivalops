@@ -13,7 +13,7 @@ interface Props {
 
 function status(o: Order, now: number): { label: string; tone: string } {
   if (o.handedOverAt) return { label: 'Collected', tone: 'bg-slate-50 text-slate-400 ring-slate-200' }
-  if (o.checkIn?.source === 'staff_rescue') return { label: 'Found by camera', tone: 'bg-emerald-50 text-emerald-700 ring-emerald-200' }
+  if (o.checkIn?.source === 'staff_rescue') return { label: 'Staff verified', tone: 'bg-emerald-50 text-emerald-700 ring-emerald-200' }
   if (o.checkIn) return { label: 'Checked in', tone: 'bg-sky-50 text-sky-700 ring-sky-200' }
   if (new Date(o.readyAt).getTime() > now) return { label: 'Preparing', tone: 'bg-slate-50 text-slate-600 ring-slate-200' }
   if (new Date(o.pickupAt).getTime() < now)
