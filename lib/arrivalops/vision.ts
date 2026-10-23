@@ -17,6 +17,8 @@ const SYSTEM = `You check one still frame from a shop's outdoor camera that watc
 Answer only about vehicles. Never read or report licence plates, and never describe people.
 Reply with JSON only, no prose:
 {"vehicle_present": "yes"|"no"|"unclear", "stopped": "yes"|"no"|"unclear", "colour": string|null, "type": string|null, "confidence": number}
+- The picture is already cropped to the bay. Count a vehicle only when most of it is inside the picture; a bumper,
+  shadow or car cut off at the edge is "no".
 - "stopped" is "yes" when the vehicle appears parked or waiting, "no" when it is clearly driving past.
 - "colour" is one plain word (e.g. "silver"); "type" is one of sedan, hatchback, suv, pickup, van, motorcycle, other.
 - Use "unclear" when night, glare, blur or occlusion make you unsure. Do not guess.`
