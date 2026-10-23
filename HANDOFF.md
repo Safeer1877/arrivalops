@@ -9,7 +9,7 @@ Anyone (human or AI) with access to this repo can finish the entry from this fil
 - **Pitch:** Ring-powered pickup exception desk. "The order is ready. The customer is outside. But nobody checked in."
 - **Video:** https://youtu.be/xVGru7-7Pkk
 - **Hosted demo:** https://arrivalops.vercel.app. It runs the replay demo entirely in the visitor's browser: each visitor gets their own board, kept in localStorage, and no keys are bundled.
-- **Repo:** https://github.com/Safeer1877/arrivalops. It is **private**, and the owner must make it public before submitting. Only do that with the owner's OK.
+- **Repo:** https://github.com/Safeer1877/arrivalops. It is public.
 
 ## State (all done and verified)
 
@@ -26,8 +26,8 @@ Anyone (human or AI) with access to this repo can finish the entry from this fil
 ## What's left, in order
 
 1. **Video.** Done and uploaded: https://youtu.be/xVGru7-7Pkk (with voice-over and music). The source is `video/arrivalops-demo.mp4`, with the script in `video/voiceover.md`.
-2. **Open Source mini challenge.** The PR draft for `AmazonAppDev/ring-api-helloworld` adds stalled-stream detection and a Reconnect button. The description and diff are in the project notes (`oss-pr-description.md`, `oss-pr-detect-stalled-stream.diff`). To open it: fork the sample, apply the diff on a branch `detect-stalled-stream`, and open the PR. **Only with the owner's OK.** Then link it on Devpost.
-3. **Make the repo public** (owner's OK).
+2. **Open Source mini challenge.** Done: https://github.com/AmazonAppDev/ring-api-helloworld/pull/49 (stalled-stream detection and a Reconnect button, from the branch `Safeer1877:detect-stalled-stream`). Link it on Devpost.
+3. **Make the repo public.** Done on 2026-10-23.
 4. **Devpost form.** Use the text below. Add the screenshots `docs/screenshots/hd-3-alert.png`, `4-matched.png`, `7-missed.png`, `9-bay-moved-car-ignored.png` and `live-3a.png`.
 5. **UI review against the Ring UX guide.** Optional. Only small copy or layout fixes, no new features.
 
@@ -60,7 +60,7 @@ Anyone (human or AI) with access to this repo can finish the entry from this fil
 
 **Challenges.**
 - Our member AWS account was refused by Bedrock's Converse API ("Operation not allowed"; support case open). A Bedrock API key on the bedrock-mantle endpoint worked.
-- Playground streams freeze after about 20 s, so we added stall detection and a Reconnect button.
+- Playground streams freeze after about 20 s, so we added stall detection and a Reconnect button, and sent that fix back to Amazon's sample (https://github.com/AmazonAppDev/ring-api-helloworld/pull/49).
 - Gemma once called a grey hatchback a black SUV at 95% confidence. That is why the detector decides and Bedrock only checks.
 
 **What we learned.** Keep the AI's claim narrow (a vehicle is in the bay) and keep humans on identity. That is what makes it safe to act on.

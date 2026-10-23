@@ -4,7 +4,7 @@
 
 A takeaway has three orders ready. A car pulls into the pickup bay, but the driver never taps "I'm here". Staff are busy, the food goes cold, and the customer phones in, annoyed, or drives off. Ordering systems like Toast and Square only know about customers who check in. **ArrivalOps handles the exception**: the shop's Ring camera notices a car waiting in the bay, ArrivalOps checks it against the ready orders that have no check-in, and staff get one clear card. They ask the driver's name, tap the order, hand it over, and the arrival-to-handover time is recorded.
 
-**Demo video (2:13):** https://youtu.be/xVGru7-7Pkk · **Try it:** https://arrivalops.vercel.app
+**Demo video (2:13):** https://youtu.be/xVGru7-7Pkk · **Try it:** https://arrivalops.vercel.app · **Fix sent upstream:** [ring-api-helloworld#49](https://github.com/AmazonAppDev/ring-api-helloworld/pull/49)
 
 ![Pickup desk with a car waiting and no check-in](docs/screenshots/3-alert.png)
 
