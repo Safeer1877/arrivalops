@@ -9,6 +9,7 @@
     "test": "vitest run",
     "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
     "typecheck": "tsc --noEmit",
+    "bedrock:check": "vite-node scripts/bedrock-check.ts",
     "format": "prettier --write \"lib/arrivalops/**/*.ts\" \"app/components/desk/**/*.tsx\" \"app/components/desk/**/*.ts\" \"app/api/arrivalops/**/*.ts\" \"app/hooks/useArrivalOps.ts\" \"app/hooks/useFrameSampler.ts\" \"app/page.tsx\" \"app/layout.tsx\"",
     "format:check": "prettier --check \"lib/arrivalops/**/*.ts\" \"app/components/desk/**/*.tsx\" \"app/components/desk/**/*.ts\" \"app/api/arrivalops/**/*.ts\" \"app/hooks/useArrivalOps.ts\" \"app/hooks/useFrameSampler.ts\" \"app/page.tsx\" \"app/layout.tsx\""
   },
