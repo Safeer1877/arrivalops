@@ -1,98 +1,114 @@
 # ArrivalOps
 
-**Ring-powered pickup exception management.** ArrivalOps catches the pickups your ordering system can't see, starting with its headline flow, **Unclaimed Pickup Rescue**: the customer who is waiting outside but never checked in.
+Pickup exception management powered by Ring video.
 
-A takeaway has three orders ready. A car pulls into the pickup bay, but the driver never taps "I'm here". Staff are busy, the food goes cold, and the customer phones in, annoyed, or drives off. Ordering systems like Toast and Square only know about customers who check in. **ArrivalOps handles the exception**: the shop's Ring camera notices a car waiting in the bay, ArrivalOps checks it against the ready orders that have no check-in, and staff get one clear card. They ask the driver's name, tap the order, hand it over, and the arrival-to-handover time is recorded.
+**[Live demo](https://arrivalops.vercel.app) | [Demo video (2:13)](https://youtu.be/xVGru7-7Pkk) | [Ring starter contribution (PR #49)](https://github.com/AmazonAppDev/ring-api-helloworld/pull/49)**
 
-**Demo video (2:13):** https://youtu.be/xVGru7-7Pkk · **Try it:** https://arrivalops.vercel.app · **Fix sent upstream:** [ring-api-helloworld#49](https://github.com/AmazonAppDev/ring-api-helloworld/pull/49)
+![ArrivalOps pickup desk showing a vehicle observation and orders awaiting check-in](docs/screenshots/hd-3-alert.png)
 
-![Pickup desk with a car waiting and no check-in](docs/screenshots/3-alert.png)
+## The problem
 
-## What it does
+An order can be ready for collection while the customer is waiting outside. If the customer does not check in, the restaurant's ordering system may have no record of their arrival, even when a camera overlooks the pickup area.
 
-| Step | What happens | Built with |
-|---|---|---|
-| 1. Watch | The pickup desk streams the shop's Ring camera and samples frames inside the pickup bay the owner marked on the picture, so cars parked elsewhere are ignored. Only changed answers are sent on, plus a slow heartbeat, following Ring's guidance to filter early. | Ring Partner API: device discovery, WHEP live video |
-| 2. Check | A vehicle detector runs in the staff browser every 3 seconds: is a vehicle in the bay, and has it moved since the last look? Coarse attributes only (body colour from pixels, car/truck/bus). Amazon Bedrock checks the same bay crop with a strict JSON schema; its verdict is recorded as agreeing or disagreeing, but the detector decides, so Bedrock alone never raises or clears an alert. Licence plates and people are never read. | COCO-SSD (SSDLite MobileNet v2, TensorFlow.js, model served by the app); Amazon Bedrock (Gemma 3 12B through a Bedrock API key on the `bedrock-mantle` endpoint, or Nova Lite through Converse) |
-| 3. Reconcile | One look can't tell a parked car from a passing one, so a first sighting is only "watched". Staff hear about it only when the camera has seen it at least twice, standing still in the same place, has seen it within the last 30 seconds, it has been there for the dwell time (1 minute by default), and some order due around now has no check-in. Elapsed time alone never raises an alert. Candidates include orders still being prepared, with the reason each one is listed ("Said ‘grey hatchback’", "Due 6 min ago", "Still preparing, ready in 8 min"). Repeat sightings fold into one case, and the activity feed records changes, not every frame. | `lib/arrivalops/reconcile.ts` |
-| 4. Rescue | Staff see "Silver hatchback in the pickup bay · waiting 0:42" and up to three candidate orders, best guess first (for example, a customer who said "silver hatchback" at checkout). They confirm with the driver. ArrivalOps never contacts or identifies anyone on its own. | Staff desk (Next.js) |
-| 5. Call out | If nobody acts within 45 seconds, the counter tablet chimes and says "A car is waiting in the pickup bay with no check-in." | Web Audio + speech |
-| 6. Measure | Uncollected value (the sale value of ready orders past pickup time with no check-in: money on the shelf, not a measured loss), cars rescued today, median alert-to-staff time, arrival-to-handover, and **Missed today**: a car that drives off after the alert is shown as "left before anyone came out", and counts as a missed pickup only when staff confirm it was a customer. | `lib/arrivalops/metrics.ts` |
+ArrivalOps uses the camera as another source of information. It looks for a vehicle waiting in a designated pickup bay, checks for orders without a recorded check-in, and brings the possible mismatch to a member of staff. It does not identify the driver or assume that every vehicle belongs to a customer.
 
-Every staff action can be undone, settings (bay, dwell, call-out delay) are per shop, and a customer who checks in late through the app closes the case automatically.
+## How it works
 
-## Why it matters
+1. **Mark the pickup bay.** Staff draw a zone on the camera view. Vehicles outside that area do not trigger pickup cases.
+2. **Observe vehicles.** In live mode, the application receives video through the Ring Partner API's WHEP interface. COCO-SSD runs in the staff browser, checking the zone approximately every three seconds.
+3. **Check for a sustained stop.** A single frame cannot establish that a car is waiting. ArrivalOps requires repeated observations, evidence that the vehicle is stationary, a recent sighting (within 30 seconds), and the configured dwell period (60 seconds by default).
+4. **Review the possible pickup.** If relevant orders have no recorded check-in, the desk opens a case with the observed vehicle, waiting time, and up to three candidate orders. Pickup timing and any customer-provided vehicle hint help rank the candidates. These are suggestions, not identifications.
+5. **Confirm the handoff.** Staff ask the driver to confirm their order. They can match it, mark it handed over, dismiss the observation, or undo a recent action. An optional spoken call-out reminds staff about an unanswered case.
+6. **Handle departures.** If a vehicle leaves before the case is resolved, ArrivalOps records the departure for review. It counts as a missed pickup only if staff confirm that it was a customer.
 
-- Pickup and curbside are now a normal part of restaurant and retail sales, and every one of those businesses runs on the assumption that customers announce themselves.
-- When they don't, the cost is concrete: food remade or thrown away, a refund, a one-star review, and a lost regular. The "Uncollected value" tile shows the sale value sitting on the shelf at any moment.
-- The shop already owns the camera. ArrivalOps turns a security device into an operations tool without new hardware, which suits small shops that will never buy a dedicated license-plate system.
+The desk also shows rescued orders, time from alert to staff confirmation, arrival-to-handover time, and the sale value of overdue ready orders without a check-in. **Uncollected value is not a calculation of lost revenue or food waste.**
 
-## Try it
+## Try the demo
 
-**Hosted demo (no account or token needed): [arrivalops.vercel.app](https://arrivalops.vercel.app)**. It opens in **Replay** mode: real frames from the Ring Developer Playground *Vehicle* stream played in a staged order (the Playground clip has no car that arrives and waits). Its vehicle answers are the real output of the same on-device detector, recorded on those frames by `scripts/record-detections.ts`. Press **Play recorded arrival**. The driver waits until you match them to their order. To see a missed pickup instead, press **Driver gives up and leaves** in Demo controls. Each visitor gets their own private board, kept in their own browser (the hosted demo runs the desk's API in the page, so no server holds anyone's clicks), and the **Demo controls** panel stands in for the ordering system (a customer tapping "I'm here", restarting the lunch rush). Demo timings are shortened (6 s dwell, 20 s call-out) and say so on screen.
+**Open [arrivalops.vercel.app](https://arrivalops.vercel.app).** No account, Ring token, or AWS credentials are required.
 
-**Run it yourself:**
+The hosted version runs in replay mode, with each visitor's board stored in their own browser. To follow the main scenario:
+
+1. Select **Play recorded arrival**.
+2. Watch the vehicle observation and the pickup exception appear.
+3. Review the candidate orders, confirm the customer's order, and mark it handed over.
+4. Try **Undo**, or use the demo controls to replay the arrival and have the driver leave.
+5. Edit the pickup bay and observe how vehicles outside the marked area are ignored.
+
+Replay timings are shortened to a six-second dwell period and a 20-second call-out delay. The production defaults are 60 and 45 seconds respectively.
+
+## What is real, recorded, or simulated?
+
+| Component | What the demo demonstrates |
+| --- | --- |
+| Ring integration | Device discovery and WHEP live streaming were tested with the Ring Developer Playground on a local Mac. Live mode requires an active Ring session and credentials. |
+| Vehicle detection | TensorFlow.js and COCO-SSD analyze live frames in the browser. Replay uses previously recorded outputs from the same detector on the included Ring frames. |
+| Replay footage | The images came from a genuine Ring Developer Playground Vehicle stream, but their order and timing are staged. The source video does **not** show the complete arrival-and-wait scenario presented by the replay. See [the capture manifest](public/replay/manifest.json). |
+| Pickup orders | Customers, orders, check-ins, and telephone numbers are simulated. No point-of-sale system is connected. |
+| Exception workflow | Reconciliation, candidate ranking, case handling, staff actions, and metrics run as application code in both modes. |
+| Ring events | Playground sessions were recorded as `on_demand` viewing events, not vehicle-motion webhooks. ArrivalOps samples video frames rather than claiming a Ring vehicle-arrival event. See [the friction log](FRICTION_LOG.md). |
+| Amazon Bedrock | Optional second opinion on a cropped frame. Testing through the Bedrock Mantle API with Gemma 3 12B returned both a correct vehicle description and a false positive on a clear bay. The on-device detector remains authoritative. |
+
+The replay is intended to let someone evaluate the workflow without live hardware or expiring Playground credentials. It should not be interpreted as footage of an actual restaurant pickup or a successful customer identification.
+
+## Implementation
+
+The application is built with Next.js 15, React, TypeScript, TensorFlow.js, COCO-SSD, WebRTC/WHEP, and optional Amazon Bedrock image analysis.
+
+- **Ring:** `app/api/ring/` handles device discovery and video-session requests. `app/hooks/useWebRTCStream.ts` manages the browser's WebRTC session.
+- **Detection:** `app/hooks/useFrameSampler.ts` samples the live feed and `lib/arrivalops/detector.ts` interprets vehicle detections in the marked zone.
+- **Reconciliation:** `lib/arrivalops/reconcile.ts` manages dwell checks, candidate orders, case transitions, and staff verification.
+- **State and metrics:** `lib/arrivalops/store.ts` and `lib/arrivalops/metrics.ts` manage the desk and reporting.
+- **Browser replay:** `lib/arrivalops/browserApi.ts` uses the same domain logic for the hosted demo, without relying on server memory to retain visitor state.
+- **Bedrock:** `lib/arrivalops/vision.ts` checks cropped frames through the Bedrock Mantle API or Converse API when configured. Its result is displayed as agreement or disagreement and cannot independently raise or clear an alert.
+
+In live mode, the system needs an active staff-browser viewing session to process video. It is a working prototype, not a continuously operating unattended camera service.
+
+## Run locally
+
+Requires Node.js and npm.
 
 ```bash
 npm install
-cp .env.example .env.local     # add RING_ACCESS_TOKEN for live mode; leave empty for replay
-npm run dev                    # http://localhost:3000
-npm test                       # reconciliation, vision parsing and API tests
+cp .env.example .env.local
+npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000). Without Ring credentials, the application opens in replay mode.
+
+To test live mode, add a valid `RING_ACCESS_TOKEN` from the [Ring Developer Playground](https://developer.amazon.com/ring/console/playground) to `.env.local`, then restart the application. Keep credentials local and never commit them.
+
+Useful commands:
+
+```bash
+npm test             # reconciliation, detection, replay, and other automated tests
+npm run lint
+npm run typecheck
+npm run build
+npm run bedrock:check # requires a configured Bedrock connection
+```
+
+### Configuration
 
 | Variable | Purpose |
-|---|---|
-| `RING_ACCESS_TOKEN` | Token from the [Ring Developer Playground](https://developer.amazon.com/ring/console/playground). Switches the desk to **Live** mode. |
-| `AWS_REGION`, AWS credentials | Optional. Bedrock second opinion for live frames (default region `us-east-1`). Without them the on-device detector does the job alone. |
-| `VISION_PROVIDER` | `on-device` to never call Bedrock. Unset: Bedrock is tried with the usual AWS credential chain, and the detector's answer is used whenever Bedrock refuses or is unreachable (Bedrock then rests for 10 minutes). |
-| `BEDROCK_API_KEY` | Optional. A Bedrock API key (Bedrock console > API keys). When set, frames go to Bedrock's OpenAI-compatible `bedrock-mantle` endpoint instead of the Converse API. Keep it in `.env.local`, never in git. |
-| `BEDROCK_MODEL_ID` | Defaults to `anthropic.claude-sonnet-5` with an API key, `us.amazon.nova-lite-v1:0` without. |
-| `ARRIVALOPS_DATA_DIR` | Optional folder to persist the board across restarts. |
-| `NEXT_PUBLIC_ARRIVALOPS_IN_BROWSER` | `1` runs the replay demo entirely in the visitor's browser (set automatically on Vercel). Live Ring mode needs the server, so leave it unset there. |
-| `NEXT_PUBLIC_SHOP_NAME`, `NEXT_PUBLIC_CURRENCY` | Branding for the desk. |
+| --- | --- |
+| `RING_ACCESS_TOKEN` | Playground access token for local live mode. The inherited Ring integration also supports a refresh-token configuration. |
+| `BEDROCK_API_KEY` | Optional API key for the Bedrock Mantle endpoint. Keep it in `.env.local`. |
+| `BEDROCK_MODEL_ID` | Optional model override. Defaults to `google.gemma-3-12b-it` when using a Bedrock API key, or `us.amazon.nova-lite-v1:0` with the Converse API. |
+| `AWS_REGION`, AWS credentials | Region and authentication for the Converse path when no Bedrock API key is configured. |
+| `VISION_PROVIDER` | Set to `on-device` to disable Bedrock requests. Without this setting, the application attempts Bedrock and falls back if unavailable. |
+| `ARRIVALOPS_DATA_DIR` | Optional directory for persisting the live shop board on disk. |
+| `NEXT_PUBLIC_ARRIVALOPS_IN_BROWSER` | `1` runs the replay desk in the browser. This is enabled automatically for Vercel builds. |
+| `NEXT_PUBLIC_SHOP_NAME`, `NEXT_PUBLIC_CURRENCY` | Shop name and display currency. |
 
-## What's real and what's simulated
+## Testing notes
 
-Judges should never have to guess, so here it is plainly:
+The [friction log](FRICTION_LOG.md) and [timestamped Mac testing log](docs/FRICTION_LOG_MAC.md) document Ring and Bedrock integration work, including short Playground sessions, frozen video, on-demand event history, and model-access problems.
 
-| Part | Status | Evidence |
-|---|---|---|
-| Ring device discovery and WHEP live video (Ring Partner API, Developer Playground) | **Real**, in live mode on a local machine | `app/api/ring/`, `app/hooks/useWebRTCStream.ts`; live screenshots in `docs/screenshots/` |
-| Vehicle detection | **Real**: COCO-SSD runs in the browser on each live frame; replay shows its real recorded output on the replay frames | `lib/arrivalops/detector.ts`, `scripts/record-detections.ts`, `lib/arrivalops/replayDetections.json` |
-| Replay footage | **Real Ring Playground frames, shown in a staged order.** The Playground clip never shows a car arriving and waiting, so the sequence is arranged; the desk labels it REPLAY | `public/replay/manifest.json` (capture times and provenance) |
-| Arrival trigger | The Playground's sessions appear in Ring event history as on-demand views, **not motion or vehicle events**. No Ring webhook triggered anything; the desk samples the stream itself | [FRICTION_LOG.md](FRICTION_LOG.md) |
-| Orders, customers, phone numbers, "I'm here" check-ins | **Simulated** demo data, labelled on screen. No POS is connected | `lib/arrivalops/seed.ts` |
-| Reconciliation, cases, metrics, undo, staff actions | **Real application logic**, the same code on the server and in the hosted demo | `lib/arrivalops/reconcile.ts`, `store.ts`, `api.ts`; 50 tests |
-| Amazon Bedrock check | **Real, tested 2026-10-23** with a Bedrock API key on `bedrock-mantle` (Gemma 3 12B, about 2.5 s per frame; request IDs `req_5n6u74lde3…`, `req_awz74rwzt4…`). On the bay crops it named the parked car correctly (grey hatchback, 95%) but also saw a vehicle in the empty bay, which is why it only checks the detector and never decides. The IAM/Converse route from our member account is still refused (`Operation not allowed`, support case open). Run `npm run bedrock:check` | `lib/arrivalops/vision.ts`, `scripts/bedrock-check.ts` |
+The Ring starter also received a related fix from this project: [AmazonAppDev/ring-api-helloworld PR #49](https://github.com/AmazonAppDev/ring-api-helloworld/pull/49), which detects stalled streams and offers a Reconnect action.
 
-ArrivalOps never identifies a person or reads a licence plate. Staff confirm the order with the driver; the app only suggests which ready orders could fit, with the reason for each.
+## Credits and license
 
-## Architecture
+ArrivalOps was developed for Amazon Build, Ship, Shape 2026 using Amazon's [Ring Hello World sample](https://github.com/AmazonAppDev/ring-api-helloworld) as its integration starting point. The original sample dashboard remains available at `/sample`.
 
-```
-Ring camera (Developer Playground)
-   │  WHEP live video (Ring Partner API)
-   ▼
-Staff desk (browser): on-device detector (COCO-SSD) on the marked bay
-   │  changed answers only, with the bay crop
-   ▼
-/api/arrivalops/observe ── Bedrock check (bedrock-mantle with an API key, or Converse), 8 s timeout, schema-checked, recorded as agreed/disagreed
-                                                  │
-                                                  ▼
-                                    reconcile: waiting car × due orders without check-in
-                                                  │
-          needs review ─▶ staff confirm the order with the driver ─▶ handed over   (or dismissed / closed by late check-in)
-                     └─ car leaves ─▶ "left before anyone came out" ─▶ staff: missed pickup, or not a customer
-                                                  │
-                                         metrics + activity log
-```
-
-Built on Amazon's [ring-api-helloworld](https://github.com/AmazonAppDev/ring-api-helloworld) sample (MIT). The original sample dashboard is still available at `/sample`.
-
-## Built during the hackathon
-
-Everything under `lib/arrivalops/`, `app/components/desk/`, `app/hooks/useArrivalOps.ts`, `app/hooks/useFrameSampler.ts`, `app/api/arrivalops/` and the new `app/page.tsx` was written for Build, Ship, Shape (October 2026). Amazon's sample provided the Ring authentication, device discovery and WHEP streaming code.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+Licensed under the terms in [LICENSE](LICENSE) (MIT).
