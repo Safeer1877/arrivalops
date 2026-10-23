@@ -11,7 +11,7 @@ A takeaway has three orders ready. A car pulls into the pickup bay, but the driv
 | Step | What happens | Built with |
 |---|---|---|
 | 1. Watch | The pickup desk streams the shop's Ring camera and samples frames inside the pickup bay the owner marked on the picture, so cars parked elsewhere are ignored. Only changed answers are sent on, plus a slow heartbeat, following Ring's guidance to filter early. | Ring Partner API: device discovery, WHEP live video |
-| 2. Check | A vehicle detector runs in the staff browser every 3 seconds: is a vehicle in the bay, and has it moved since the last look? Coarse attributes only (body colour from pixels, car/truck/bus). When the AWS account allows it, Bedrock gives a second opinion on the bay crop with a strict JSON schema. Licence plates and people are never read. | COCO-SSD (SSDLite MobileNet v2, TensorFlow.js, model served by the app); optional Amazon Bedrock (Nova Lite, Converse API) |
+| 2. Check | A vehicle detector runs in the staff browser every 3 seconds: is a vehicle in the bay, and has it moved since the last look? Coarse attributes only (body colour from pixels, car/truck/bus). Amazon Bedrock checks the same bay crop with a strict JSON schema; its verdict is recorded as agreeing or disagreeing, but the detector decides, so Bedrock alone never raises or clears an alert. Licence plates and people are never read. | COCO-SSD (SSDLite MobileNet v2, TensorFlow.js, model served by the app); Amazon Bedrock (Gemma 3 12B through a Bedrock API key on the `bedrock-mantle` endpoint, or Nova Lite through Converse) |
 | 3. Reconcile | One look can't tell a parked car from a passing one, so a first sighting is only "watched". Staff hear about it only when the camera has seen it at least twice, standing still in the same place, has seen it within the last 30 seconds, it has been there for the dwell time (1 minute by default), and some order due around now has no check-in. Elapsed time alone never raises an alert. Candidates include orders still being prepared, with the reason each one is listed ("Said ‘grey hatchback’", "Due 6 min ago", "Still preparing, ready in 8 min"). Repeat sightings fold into one case, and the activity feed records changes, not every frame. | `lib/arrivalops/reconcile.ts` |
 | 4. Rescue | Staff see "Silver hatchback in the pickup bay · waiting 0:42" and up to three candidate orders, best guess first (for example, a customer who said "silver hatchback" at checkout). They confirm with the driver. ArrivalOps never contacts or identifies anyone on its own. | Staff desk (Next.js) |
 | 5. Call out | If nobody acts within 45 seconds, the counter tablet chimes and says "A car is waiting in the pickup bay with no check-in." | Web Audio + speech |
@@ -61,7 +61,7 @@ Judges should never have to guess, so here it is plainly:
 | Arrival trigger | The Playground's sessions appear in Ring event history as on-demand views, **not motion or vehicle events**. No Ring webhook triggered anything; the desk samples the stream itself | [FRICTION_LOG.md](FRICTION_LOG.md) |
 | Orders, customers, phone numbers, "I'm here" check-ins | **Simulated** demo data, labelled on screen. No POS is connected | `lib/arrivalops/seed.ts` |
 | Reconciliation, cases, metrics, undo, staff actions | **Real application logic**, the same code on the server and in the hosted demo | `lib/arrivalops/reconcile.ts`, `store.ts`, `api.ts`; 50 tests |
-| Amazon Bedrock (Nova Lite) second opinion | **Built but currently unavailable**: every call from our AWS account returns `ValidationException: Operation not allowed` (support case open). The desk falls back to the detector and says so | `lib/arrivalops/vision.ts` |
+| Amazon Bedrock check | **Real, tested 2026-10-23** with a Bedrock API key on `bedrock-mantle` (Gemma 3 12B, about 2.5 s per frame; request IDs `req_5n6u74lde3…`, `req_awz74rwzt4…`). On the bay crops it named the parked car correctly (grey hatchback, 95%) but also saw a vehicle in the empty bay, which is why it only checks the detector and never decides. The IAM/Converse route from our member account is still refused (`Operation not allowed`, support case open). Run `npm run bedrock:check` | `lib/arrivalops/vision.ts`, `scripts/bedrock-check.ts` |
 
 ArrivalOps never identifies a person or reads a licence plate. Staff confirm the order with the driver; the app only suggests which ready orders could fit, with the reason for each.
 
@@ -74,7 +74,7 @@ Ring camera (Developer Playground)
 Staff desk (browser): on-device detector (COCO-SSD) on the marked bay
    │  changed answers only, with the bay crop
    ▼
-/api/arrivalops/observe ── optional second opinion: Bedrock Converse (Nova Lite), 8 s timeout, schema-checked
+/api/arrivalops/observe ── Bedrock check (bedrock-mantle with an API key, or Converse), 8 s timeout, schema-checked, recorded as agreed/disagreed
                                                   │
                                                   ▼
                                     reconcile: waiting car × due orders without check-in
