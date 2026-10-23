@@ -40,12 +40,13 @@ export function AboutDemo({ open, onClose }: { open: boolean; onClose: () => voi
       ref={ref}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
-      className="w-[min(40rem,calc(100vw-2rem))] rounded-2xl p-0 text-slate-900 backdrop:bg-slate-900/40"
+      className="max-h-[85vh] w-[min(40rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl p-0 text-slate-900 backdrop:bg-slate-900/40"
     >
       <div className="p-6">
         <h2 className="text-xl font-bold">About this demo</h2>
         <p className="mt-2 text-slate-600">
-          ArrivalOps reviews possible pickup arrivals when customers have not checked in. It never identifies a driver from the camera,\n          reads licence plates or faces, or automatically assigns an order.
+          ArrivalOps reviews possible pickup arrivals when customers have not checked in. It never identifies a driver from the camera,
+          reads licence plates or faces, or automatically assigns an order.
         </p>
         <table className="mt-4 w-full text-left text-sm">
           <thead>
