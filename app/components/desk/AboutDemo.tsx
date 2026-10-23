@@ -4,14 +4,25 @@ import { useEffect, useRef } from 'react'
 
 const ROWS: Array<[string, string]> = [
   [
-    'Ring Partner API: device discovery and WHEP live video from the Developer Playground',
-    'Orders, customers and “I’m here” app check-ins (no POS is connected in this build)',
+    'Ring video',
+    'Device discovery and WHEP live streaming were tested with the Ring Developer Playground on a local Mac. This hosted demo uses recorded frames, not a live camera connection.',
   ],
   [
-    'A vehicle detector (COCO-SSD) running in this browser on frames from that video, with Amazon Bedrock (Nova Lite) as a second opinion when the AWS account allows it. Replay shows the answers the same detector gave on its frames.',
-    'Replay mode: real frames from the Playground’s Vehicle stream, played in a staged order because the clip never shows a car pulling in and waiting. The stamps on the picture are Ring’s own: when the clip was filmed (2023) and when the Playground streamed it to us (2026).',
+    'Vehicle detection',
+    'COCO-SSD runs in the browser during live sessions. The replay uses saved detection results from the same model on the recorded Ring frames.',
   ],
-  ['Reconciliation, metrics, undo and this desk', 'The spoken call-out plays on this device, not on a Ring Chime'],
+  [
+    'Amazon Bedrock',
+    'Optional second opinion when configured for live mode. Testing used Gemma 3 12B through the Bedrock API-key endpoint. The public replay does not make Bedrock requests.',
+  ],
+  [
+    'Orders and arrivals',
+    'Customer details, pickup orders, check-ins, and the timing of the replayed arrival are simulated. No restaurant point-of-sale system or vehicle-arrival webhook is connected.',
+  ],
+  [
+    'Pickup workflow',
+    'Candidate ranking, exception handling, staff verification, undo, and metrics use the application\'s real reconciliation logic. Spoken call-outs play on the staff device, not a Ring Chime.',
+  ],
 ]
 
 export function AboutDemo({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -34,14 +45,13 @@ export function AboutDemo({ open, onClose }: { open: boolean; onClose: () => voi
       <div className="p-6">
         <h2 className="text-xl font-bold">About this demo</h2>
         <p className="mt-2 text-slate-600">
-          ArrivalOps notices a car waiting in the pickup bay when nobody checked in, and asks staff which ready order it is for. It never
-          reads licence plates or faces, and it never matches a customer on its own.
+          ArrivalOps reviews possible pickup arrivals when customers have not checked in. It never identifies a driver from the camera,\n          reads licence plates or faces, or automatically assigns an order.
         </p>
         <table className="mt-4 w-full text-left text-sm">
           <thead>
             <tr className="text-xs uppercase tracking-wide text-slate-500">
-              <th className="pb-2 pr-4 font-semibold">Real</th>
-              <th className="pb-2 font-semibold">Simulated, and labelled</th>
+              <th className="pb-2 pr-4 font-semibold">Component</th>
+              <th className="pb-2 font-semibold">What this demo shows</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-200 align-top">
